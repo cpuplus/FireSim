@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace FireSim.Api.Data
 {
@@ -9,10 +11,21 @@ namespace FireSim.Api.Data
         public DbSet<User> Users { get; set; }
         public DbSet<EquipmentType> EquipmentTypes { get; set; }
         public DbSet<InspectionResult> InspectionResults { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            
+            modelBuilder.Entity<User>().ToTable("Users");
+            modelBuilder.Entity<EquipmentType>().ToTable("EquipmentTypes");
+            modelBuilder.Entity<InspectionResult>().ToTable("InspectionResults");
+        }
     }
 
     public class User
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int UserId { get; set; }
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
@@ -23,6 +36,8 @@ namespace FireSim.Api.Data
 
     public class EquipmentType
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int EquipmentTypeId { get; set; }
         public string Code { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
@@ -31,6 +46,8 @@ namespace FireSim.Api.Data
 
     public class InspectionResult
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ResultId { get; set; }
         public int UserId { get; set; }
         public int EquipmentTypeId { get; set; }
