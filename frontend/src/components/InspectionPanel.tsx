@@ -1,12 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { getInspectionResults, createInspectionResult } from "../services/api";
 import type { InspectionResult } from "../services/api";
 
-export default function InspectionPanel() {
+export interface InspectionPanelRef {
+  refresh: () => void;
+}
+
+const InspectionPanel = forwardRef<InspectionPanelRef>((_, ref) => {
   const [results, setResults] = useState<InspectionResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 데이터 불러오기
+  // 데이터 불러오기 함수
   const fetchResults = async () => {
     try {
       setLoading(true);
@@ -18,6 +27,11 @@ export default function InspectionPanel() {
       setLoading(false);
     }
   };
+
+  // 부모 컴포넌트에서 ref를 통해 이 함수를 호출할 수 있도록 연결
+  useImperativeHandle(ref, () => ({
+    refresh: fetchResults,
+  }));
 
   useEffect(() => {
     fetchResults();
@@ -56,7 +70,9 @@ export default function InspectionPanel() {
         boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
       }}
     >
-      <h3 style={{ margin: "0 0 10px 0" }}>🔥 소방 설비 점검 결과</h3>
+      <h3 style={{ margin: "0 0 10px 0", color: "#333" }}>
+        🔥 소방 설비 점검 결과
+      </h3>
       <button
         onClick={handleTestSave}
         style={{
@@ -76,7 +92,9 @@ export default function InspectionPanel() {
         {loading ? (
           <p>불러오는 중...</p>
         ) : (
-          <ul style={{ paddingLeft: 15, margin: 0, fontSize: 13 }}>
+          <ul
+            style={{ paddingLeft: 15, margin: 0, fontSize: 13, color: "#333" }}
+          >
             {results.map((r, index) => (
               <li key={r.resultId || index} style={{ marginBottom: 6 }}>
                 ID: {r.userId} | 점수: <b>{r.score}점</b> (
@@ -91,4 +109,6 @@ export default function InspectionPanel() {
       </div>
     </div>
   );
-}
+});
+
+export default InspectionPanel;

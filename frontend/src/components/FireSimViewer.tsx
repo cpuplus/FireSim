@@ -5,10 +5,12 @@ import { EquipmentModel } from "./EquipmentModel";
 
 interface FireSimViewerProps {
   selectedModelPath?: string;
+  onSelectEquipment?: () => void; // 부모로 클릭 신호를 보내는 함수 추가
 }
 
 export const FireSimViewer: React.FC<FireSimViewerProps> = ({
   selectedModelPath = "",
+  onSelectEquipment,
 }) => {
   return (
     <div
@@ -27,7 +29,10 @@ export const FireSimViewer: React.FC<FireSimViewerProps> = ({
 
         {/* 3D 모델 중앙 자동 정렬 및 로드 */}
         <Center top>
-          <EquipmentModel modelPath={selectedModelPath} />
+          <EquipmentModel
+            modelPath={selectedModelPath}
+            onSelect={onSelectEquipment}
+          />
         </Center>
 
         {/* 바닥 그림자 및 격자 */}
