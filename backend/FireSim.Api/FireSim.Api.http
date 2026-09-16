@@ -1,0 +1,6 @@
+@FireSim.Api_HostAddress = http://localhost:5007
+
+GET {{FireSim.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

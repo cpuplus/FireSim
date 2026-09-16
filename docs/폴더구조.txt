@@ -1,0 +1,14 @@
+FireSim/                 <-- [루트] 메인 플랫폼 이름
+├── docs/
+├── database/            <-- 전체 설비(펌프, 가스, 수계) 통합 DB 스키마
+├── backend/          <--  .NET Web API
+│   └── src/
+│       └── FireSim.Api/ <-- 백엔드 API 서비스명
+├── frontend/            <-- 통합 대시보드 및 플랫폼 UI, Node.js / React / Vue / WebGL 등
+├── simulation/
+│   ├── modules/         <-- [확장 모듈] 개별 소화설비 시뮬레이션 로직
+│   │   ├── pump/        <-- 펌프성능검사 모듈
+│   │   ├── water/       <-- 수계소화설비 모듈
+│   │   └── gas/         <-- 가스소화설비 모듈
+│   └── models/          <-- 설비별 Blender 3D assets (.blend, .fbx)
+└── tests/                                     <-- 자동화 테스트 및 검증
