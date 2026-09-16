@@ -1,23 +1,30 @@
 ﻿import React from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Center, ContactShadows } from '@react-three/drei';
+import { EquipmentModel } from './EquipmentModel';
 
-export const FireSimViewer: React.FC = () => {
+interface FireSimViewerProps {
+  selectedModelPath?: string;
+}
+
+export const FireSimViewer: React.FC<FireSimViewerProps> = ({ selectedModelPath = '' }) => {
   return (
     <div style={{ width: '100%', height: '500px', background: '#1e1e1e', borderRadius: '8px', overflow: 'hidden' }}>
-      <Canvas camera={{ position: [3, 3, 3], fov: 50 }}>
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[10, 10, 5]} intensity={1.2} />
-        <pointLight position={[-10, -10, -10]} intensity={0.5} />
-        
-        {/* 3D 소방 설비 박스 */}
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[1.5, 1.5, 1.5]} />
-          <meshStandardMaterial color="#d32f2f" metalness={0.4} roughness={0.3} />
-        </mesh>
+      <Canvas camera={{ position: [4, 3, 4], fov: 45 }}>
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[10, 15, 10]} intensity={1.2} castShadow />
+        <pointLight position={[-10, -10, -10]} intensity={0.4} />
 
+        {/* 3D 모델 중앙 자동 정렬 및 로드 */}
+        <Center top>
+          <EquipmentModel modelPath={selectedModelPath} />
+        </Center>
+
+        {/* 바닥 그림자 및 격자 */}
+        <ContactShadows opacity={0.6} scale={10} blur={1} far={10} resolution={256} color="#000000" />
         <gridHelper args={[10, 10, '#444444', '#222222']} />
-        <OrbitControls makeDefault minDistance={2} maxDistance={10} />
+        
+        <OrbitControls makeDefault minDistance={1.5} maxDistance={12} target={[0, 0.5, 0]} />
       </Canvas>
     </div>
   );

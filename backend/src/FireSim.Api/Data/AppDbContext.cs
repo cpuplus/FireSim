@@ -19,7 +19,25 @@ namespace FireSim.Api.Data
             modelBuilder.Entity<User>().ToTable("Users");
             modelBuilder.Entity<EquipmentType>().ToTable("EquipmentTypes");
             modelBuilder.Entity<InspectionResult>().ToTable("InspectionResults");
+
+            // 이미지에 배치하신 실제 3D 파일명 반영
+            modelBuilder.Entity<EquipmentType>().HasData(
+                new EquipmentType { EquipmentTypeId = 1, Code = "PUMP_PERF", Name = "펌프성능검사", Description = "주펌프 및 충압펌프의 체절운전, 정격운전, 과부하운전 성능 검사 모듈", ModelPath = "/models/water_pump.glb" },
+                new EquipmentType { EquipmentTypeId = 2, Code = "WATER_SYS", Name = "수계소화설비", Description = "옥내/옥외소화전 및 스프링클러 설비 작동 실습 모듈", ModelPath = "/models/valve_ii.glb" }, 
+                new EquipmentType { EquipmentTypeId = 3, Code = "GAS_SYS", Name = "가스소화설비", Description = "이산화탄소/하론/할로게화합물 소화설비 제어반 및 밸브 실습 모듈", ModelPath = "" }
+            );
         }
+    }
+
+    public class EquipmentType
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int EquipmentTypeId { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? ModelPath { get; set; }
     }
 
     public class User
@@ -32,16 +50,6 @@ namespace FireSim.Api.Data
         public string PasswordHash { get; set; } = string.Empty;
         public string Role { get; set; } = "Student";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    }
-
-    public class EquipmentType
-    {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int EquipmentTypeId { get; set; }
-        public string Code { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string? Description { get; set; }
     }
 
     public class InspectionResult
