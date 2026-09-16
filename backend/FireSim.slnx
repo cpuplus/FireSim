@@ -1,3 +1,5 @@
 <Solution>
-  <Project Path="FireSim.Api/FireSim.Api.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/FireSim.Api/FireSim.Api.csproj" />
+  </Folder>
 </Solution>
