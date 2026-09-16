@@ -28,11 +28,55 @@ namespace FireSim.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<InspectionResult>> PostInspectionResult(InspectionResult result)
         {
-            result.CreatedAt = DateTime.UtcNow;
+            if (result.CreatedAt == default)
+            {
+                result.CreatedAt = DateTime.UtcNow;
+            }
+
             _context.InspectionResults.Add(result);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetInspectionResults), new { id = result.ResultId }, result);
+        }
+
+        // 3. 설비별/상태별 필터 조회 (GET: api/InspectionResults/filter?equipmentTypeId=1&isPassed=true)
+        [HttpGet("filter")]
+        public async Task<ActionResult<IEnumerable<InspectionResult>>> GetFilteredResults([FromQuery] int? equipmentTypeId, [FromQuery] bool? isPassed)
+        {
+            var query = _context.InspectionResults.AsQueryable();
+
+            if (equipmentTypeId.HasValue)
+            {
+                query = query.Where(r => r.EquipmentTypeId == equipmentTypeId.Value);
+            }
+
+            if (isPassed.HasValue)
+            {
+                query = query.Where(r => r.IsPassed == isPassed.Value);
+            }
+
+            var results = await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
+            return Ok(results);
+        }
+
+        // 4. 전체 통계 정보 조회 (GET: api/InspectionResults/stats)
+        [HttpGet("stats")]
+        public async Task<ActionResult> GetInspectionStats()
+        {
+            var totalCount = await _context.InspectionResults.CountAsync();
+            var passedCount = await _context.InspectionResults.CountAsync(r => r.IsPassed);
+            var avgScore = totalCount > 0 ? await _context.InspectionResults.AverageAsync(r => (double?)r.Score) ?? 0 : 0;
+
+            var stats = new
+            {
+                TotalInspections = totalCount,
+                PassedInspections = passedCount,
+                FailedInspections = totalCount - passedCount,
+                AverageScore = Math.Round(avgScore, 2),
+                PassRate = totalCount > 0 ? Math.Round((double)passedCount / totalCount * 100, 1) : 0
+            };
+
+            return Ok(stats);
         }
     }
 }

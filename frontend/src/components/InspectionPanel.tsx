@@ -1,11 +1,6 @@
-import React, {
-  useState,
-  useEffect,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
-import { getInspectionResults, createInspectionResult } from "../services/api";
-import type { InspectionResult } from "../services/api";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { getInspectionResults, createInspectionResult } from '../services/api';
+import type { InspectionResult } from '../services/api';
 
 export interface InspectionPanelRef {
   refresh: () => void;
@@ -15,7 +10,6 @@ const InspectionPanel = forwardRef<InspectionPanelRef>((_, ref) => {
   const [results, setResults] = useState<InspectionResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 데이터 불러오기 함수
   const fetchResults = async () => {
     try {
       setLoading(true);
@@ -28,16 +22,14 @@ const InspectionPanel = forwardRef<InspectionPanelRef>((_, ref) => {
     }
   };
 
-  // 부모 컴포넌트에서 ref를 통해 이 함수를 호출할 수 있도록 연결
   useImperativeHandle(ref, () => ({
-    refresh: fetchResults,
+    refresh: fetchResults
   }));
 
   useEffect(() => {
     fetchResults();
   }, []);
 
-  // 테스트 점검 결과 저장 핸들러
   const handleTestSave = async () => {
     try {
       const newResult: InspectionResult = {
@@ -46,62 +38,105 @@ const InspectionPanel = forwardRef<InspectionPanelRef>((_, ref) => {
         score: 95,
         isPassed: true,
         completionTimeSeconds: 45,
-        detailsJson: JSON.stringify({ note: "정상 작동 확인 완료" }),
+        detailsJson: JSON.stringify({ note: '수동 테스트 점검 완료' })
       };
       await createInspectionResult(newResult);
-      alert("검사 결과가 성공적으로 저장되었습니다!");
-      fetchResults(); // 목록 새로고침
+      fetchResults();
     } catch (error) {
-      alert("저장 중 오류가 발생했습니다.");
+      alert('저장 중 오류가 발생했습니다.');
     }
   };
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 20,
-        right: 20,
-        width: 350,
-        background: "rgba(255,255,255,0.9)",
-        padding: 15,
-        borderRadius: 8,
-        zIndex: 1000,
-        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-      }}
-    >
-      <h3 style={{ margin: "0 0 10px 0", color: "#333" }}>
-        🔥 소방 설비 점검 결과
-      </h3>
-      <button
-        onClick={handleTestSave}
-        style={{
-          width: "100%",
-          marginBottom: 10,
-          padding: "8px 12px",
-          background: "#007bff",
-          color: "#fff",
-          border: "none",
-          borderRadius: 4,
-          cursor: "pointer",
+    <div style={{
+      position: 'absolute',
+      top: 24,
+      right: 24,
+      width: 380,
+      background: 'rgba(24, 28, 36, 0.85)',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      padding: '20px',
+      borderRadius: '12px',
+      zIndex: 1000,
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+      color: '#f1f5f9',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#38bdf8' }}>
+          🛡️ 실시간 소방 설비 점검 현황
+        </h3>
+        <span style={{ fontSize: '12px', background: '#334155', padding: '2px 8px', borderRadius: '12px', color: '#94a3b8' }}>
+          Live
+        </span>
+      </div>
+
+      <button 
+        onClick={handleTestSave} 
+        style={{ 
+          width: '100%', 
+          marginBottom: '14px', 
+          padding: '10px 14px', 
+          background: 'linear-gradient(135deg, #0284c7, #0369a1)', 
+          color: '#fff', 
+          border: 'none', 
+          borderRadius: '6px', 
+          cursor: 'pointer',
+          fontWeight: 600,
+          fontSize: '13px',
+          boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
+          transition: 'all 0.2s'
         }}
+        onMouseOver={(e) => (e.currentTarget.style.opacity = '0.9')}
+        onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
       >
-        테스트 결과 저장하기 (POST)
+        + 수동 테스트 결과 기록
       </button>
-      <div style={{ maxHeight: 200, overflowY: "auto", marginTop: 10 }}>
+
+      <div style={{ 
+        maxHeight: '260px', 
+        overflowY: 'auto', 
+        paddingRight: '4px',
+        scrollbarWidth: 'thin',
+        scrollbarColor: '#475569 transparent'
+      }}>
         {loading ? (
-          <p>불러오는 중...</p>
+          <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>데이터 동기화 중...</p>
+        ) : results.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>기록된 점검 결과가 없습니다.</p>
         ) : (
-          <ul
-            style={{ paddingLeft: 15, margin: 0, fontSize: 13, color: "#333" }}
-          >
+          <ul style={{ padding: 0, margin: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {results.map((r, index) => (
-              <li key={r.resultId || index} style={{ marginBottom: 6 }}>
-                ID: {r.userId} | 점수: <b>{r.score}점</b> (
-                {r.isPassed ? "합격" : "불합격"}) <br />
-                <small style={{ color: "#666" }}>
-                  {r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}
-                </small>
+              <li key={r.resultId || index} style={{ 
+                background: 'rgba(30, 41, 59, 0.7)', 
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                padding: '10px 12px', 
+                borderRadius: '8px',
+                fontSize: '13px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 500, color: '#e2e8f0' }}>
+                    설비 ID: {r.equipmentTypeId} | 점수: <b style={{ color: '#38bdf8' }}>{r.score}점</b>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                    {r.createdAt ? new Date(r.createdAt).toLocaleString() : '방금 전'}
+                  </div>
+                </div>
+                <span style={{
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  background: r.isPassed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                  color: r.isPassed ? '#34d399' : '#f87171',
+                  border: `1px solid ${r.isPassed ? 'rgba(52, 211, 153, 0.3)' : 'rgba(248, 113, 113, 0.3)'}`
+                }}>
+                  {r.isPassed ? '정상' : '이상'}
+                </span>
               </li>
             ))}
           </ul>
