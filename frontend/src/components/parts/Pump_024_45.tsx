@@ -8,10 +8,12 @@ interface PumpProps {
 }
 
 /**
- * 기존 정밀 펌프 3D 모델을 생성하여 THREE.Group으로 반환하는 공통 함수
+ * 정밀 펌프 3D 모델을 생성하여 THREE.Group으로 반환하는 공통 함수
+ * - 조립 화면(AssemblyViewer) 및 단독 화면에서 공통으로 호출하여 사용
  */
 export function buildPumpGroup(): THREE.Group {
   const pumpGroup = new THREE.Group();
+  pumpGroup.name = "pump-024-45";
 
   // 재질 정의
   const motorBodyMat = new THREE.MeshStandardMaterial({
@@ -166,7 +168,7 @@ export function buildPumpGroup(): THREE.Group {
   });
   pumpGroup.add(guardGroup);
 
-  // D. 펌프 본체 부 (0.24-45)
+  // D. 펌프 본체 부
   const voluteGeo = new THREE.CylinderGeometry(90, 90, 160, 32);
   const voluteBody = new THREE.Mesh(voluteGeo, pumpBodyMat);
   voluteBody.rotation.z = Math.PI / 2;
@@ -214,7 +216,7 @@ export function buildPumpGroup(): THREE.Group {
 
   // 플랜지
   const pipeRadius = 20;
-  const flangeOuterRadius = 48;
+  const flangeOuterRadius = 50;
   const boltCount = 4;
   const boltCircleRadius = 36;
   const boltHoleRadius = 3.5;
@@ -260,7 +262,9 @@ export function buildPumpGroup(): THREE.Group {
   suctionPipe.position.set(suctionX, 114, 95);
   pumpGroup.add(suctionPipe);
 
+  // 💡 흡입구 플랜지 메쉬에 확장성 있는 이름 부여
   const suctionFlange = new THREE.Mesh(flangeGeometry, pumpBodyMat);
+  suctionFlange.name = "flange_suction";
   suctionFlange.position.set(suctionX, 114, 95 + suctionPipeLength / 2);
   pumpGroup.add(suctionFlange);
 
@@ -284,7 +288,9 @@ export function buildPumpGroup(): THREE.Group {
   dischargePipe.position.set(190, 198, 0);
   pumpGroup.add(dischargePipe);
 
+  // 💡 토출구 플랜지 메쉬에 확장성 있는 이름 부여
   const dischargeFlange = new THREE.Mesh(flangeGeometry, pumpBodyMat);
+  dischargeFlange.name = "flange_discharge";
   dischargeFlange.rotation.x = Math.PI / 2;
   dischargeFlange.position.set(190, 228, 0);
   pumpGroup.add(dischargeFlange);
@@ -315,7 +321,7 @@ export function buildPumpGroup(): THREE.Group {
 }
 
 /**
- * 단독 렌더링용 기존 메인 컴포넌트
+ * 단독 렌더링용 메인 컴포넌트 (단품 뷰어용)
  */
 export default function Pump_024_45({ pumpType }: PumpProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -324,7 +330,7 @@ export default function Pump_024_45({ pumpType }: PumpProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    // 1. 씬, 카메라, 렌더러 설정
+    // 1. Scene, Camera, Renderer 초기화
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0b0f19);
 
@@ -339,10 +345,9 @@ export default function Pump_024_45({ pumpType }: PumpProps) {
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(renderer.domElement);
 
-    // 오비트 컨트롤
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -387,9 +392,28 @@ export default function Pump_024_45({ pumpType }: PumpProps) {
     };
     window.addEventListener("resize", handleResize);
 
+    // 5. Cleanup 구문: WebGL Context Lost 방지를 위한 철저한 자원 해제
     return () => {
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
+      controls.dispose();
+
+      // Scene 내 모든 Mesh의 Geometry, Material 메모리 해제
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          if (object.geometry) {
+            object.geometry.dispose();
+          }
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach((mat) => mat.dispose());
+            } else {
+              object.material.dispose();
+            }
+          }
+        }
+      });
+
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }

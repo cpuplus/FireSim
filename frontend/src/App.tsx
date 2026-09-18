@@ -2,8 +2,9 @@
 import React, { useState } from "react";
 import PumpPerformancePage from "./pages/PumpPerformancePage";
 import WaterFireFightingPage from "./pages/WaterFireFightingPage";
+import AssemblyPracticePage from "./pages/AssemblyPracticePage"; // 시공실무/조립 실습 페이지
 import PartManagementPage from "./pages/PartManagementPage";
-import { PartProvider } from "./context/PartContext"; // 추가
+import { PartProvider } from "./context/PartContext";
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<
@@ -12,8 +13,6 @@ export default function App() {
 
   return (
     <PartProvider>
-      {" "}
-      {/* 전역 컨텍스트로 감싸기 */}
       <div
         style={{
           width: "100%",
@@ -120,6 +119,7 @@ export default function App() {
           </div>
         </div>
 
+        {/* 메인 콘텐트 영역 */}
         {currentTab === "none" && (
           <div
             style={{
@@ -137,7 +137,10 @@ export default function App() {
         )}
 
         {currentTab === "main" && <PumpPerformancePage />}
-        {currentTab === "assembly" && <WaterFireFightingPage />}
+        
+        {/* 기존 WaterFireFightingPage 대신 직접 실습 뷰어를 연결하려면 AssemblyPracticePage로 교체 사용 가능 */}
+        {currentTab === "assembly" && <AssemblyPracticePage />}
+
         {currentTab === "parts" && <PartManagementPage />}
       </div>
     </PartProvider>
