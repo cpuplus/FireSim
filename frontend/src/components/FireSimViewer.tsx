@@ -1,4 +1,5 @@
-﻿import { useEffect, useRef } from "react";
+﻿// src/components/FireSimViewer.tsx
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 interface FireSimViewerProps {
@@ -11,6 +12,7 @@ export default function FireSimViewer({
   selectedPartId,
   onSelectEquipment,
 }: FireSimViewerProps) {
+  // 💡 Three.js 캔버스가 들어갈 전용 Ref
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -145,7 +147,7 @@ export default function FireSimViewer({
     reliefCap.position.set(-0.3, 1.85, 0);
     reliefGroup.add(reliefCap);
 
-    // 4. 체크 밸브 (Check Valve) 세트 (배관 중간에 위치한 밸브 형상)
+    // 4. 체크 밸브 (Check Valve) 세트
     const checkValveBody = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.7, 0.7),
       valveMat,
@@ -191,7 +193,6 @@ export default function FireSimViewer({
       checkValveGroup.visible = selectedPartId === "check-valve";
       pressureGaugeGroup.visible = selectedPartId === "pressure-gauge";
 
-      // 부품별 맞춤 카메라 위치 및 줌 조정
       if (selectedPartId === "pump") {
         camera.position.set(0, -1, 6);
       } else if (selectedPartId === "flow-meter") {
@@ -252,11 +253,9 @@ export default function FireSimViewer({
       currentMount.removeEventListener("click", handleCanvasClick);
       cancelAnimationFrame(animationFrameId);
 
-      // 💡 WebGL 렌더러 리소스 명시적 해제 추가
       renderer.dispose();
-      renderer.forceContextLoss(); // WebGL 컨텍스트 강제 소멸
+      renderer.forceContextLoss();
 
-      // 3. 캔버스 DOM 요소 완전 제거
       if (renderer.domElement && renderer.domElement.parentNode) {
         renderer.domElement.parentNode.removeChild(renderer.domElement);
       }
@@ -268,19 +267,46 @@ export default function FireSimViewer({
   }, [selectedPartId, onSelectEquipment]);
 
   return (
+    // 💡 1. 가장 바깥쪽 부모 컨테이너 (relative 지정 및 뱃지가 위치할 기준점)
     <div
-      ref={mountRef}
       style={{
         width: "100%",
         height: "100%",
-        position: "absolute",
-        top: 0,
-        left: 0,
+        position: "relative",
         borderRadius: "8px",
         overflow: "hidden",
         border: "1px solid rgba(255, 255, 255, 0.1)",
-        cursor: "pointer",
       }}
-    /> 
+    >
+      {/* 💡 2. 파일명 표기 뱃지 (Three.js 캔버스 외부에 존재하므로 지워지지 않음) */}
+      <div
+        style={{
+          position: "absolute",
+          top: "8px",
+          left: "8px",
+          background: "rgba(15, 23, 42, 0.85)",
+          color: "#38bdf8",
+          padding: "3px 8px",
+          borderRadius: "4px",
+          fontSize: "11px",
+          fontWeight: 600,
+          zIndex: 30,
+          border: "1px solid rgba(56, 189, 248, 0.3)",
+          pointerEvents: "none",
+        }}
+      >
+        FireSimViewer.tsx
+      </div>
+
+      {/* 💡 3. Three.js 캔버스가 동적으로 append 될 내부 전용 영역 */}
+      <div
+        ref={mountRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          cursor: "pointer",
+        }}
+      />
+    </div>
   );
 }

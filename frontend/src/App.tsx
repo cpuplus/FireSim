@@ -1,14 +1,15 @@
 ﻿// src/App.tsx
 import { useState } from "react";
 import PumpPerformancePage from "./pages/PumpPerformancePage";
-import AssemblyPracticePage from "./pages/AssemblyPracticePage"; // 시공실무/조립 실습 페이지
+import AssemblyPracticePage from "./pages/AssemblyPracticePage"; // 수계소화설비 시공실무/조립 실습 페이지
 import PartManagementPage from "./pages/PartManagementPage";
 import { PartProvider } from "./context/PartContext";
 
 export default function App() {
+  // 💡 초기값 및 타입을 "assembly"(수계소화설비 시공실무)로 설정하여 첫 실행 시 기본 페이지로 지정
   const [currentTab, setCurrentTab] = useState<
-    "none" | "main" | "assembly" | "parts"
-  >("none");
+    "assembly" | "main" | "parts"
+  >("assembly");
 
   return (
     <PartProvider>
@@ -48,28 +49,8 @@ export default function App() {
             >
               FireSim 3D 관제 시스템
             </h2>
+            {/* 💡 요청하신 메뉴 순서: 수계소화설비 시공실무 -> 펌프 성능 시험 -> 부품 목록 관리 */}
             <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                onClick={() => setCurrentTab("main")}
-                style={{
-                  background:
-                    currentTab === "main"
-                      ? "rgba(56, 189, 248, 0.15)"
-                      : "transparent",
-                  color: currentTab === "main" ? "#38bdf8" : "#94a3b8",
-                  border:
-                    currentTab === "main"
-                      ? "1px solid rgba(56, 189, 248, 0.3)"
-                      : "1px solid transparent",
-                  padding: "6px 14px",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                }}
-              >
-                펌프 성능 시험
-              </button>
-
               <button
                 onClick={() => setCurrentTab("assembly")}
                 style={{
@@ -89,6 +70,27 @@ export default function App() {
                 }}
               >
                 수계소화설비 시공실무
+              </button>
+
+              <button
+                onClick={() => setCurrentTab("main")}
+                style={{
+                  background:
+                    currentTab === "main"
+                      ? "rgba(56, 189, 248, 0.15)"
+                      : "transparent",
+                  color: currentTab === "main" ? "#38bdf8" : "#94a3b8",
+                  border:
+                    currentTab === "main"
+                      ? "1px solid rgba(56, 189, 248, 0.3)"
+                      : "1px solid transparent",
+                  padding: "6px 14px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                }}
+              >
+                펌프 성능 시험
               </button>
 
               <button
@@ -113,31 +115,26 @@ export default function App() {
               </button>
             </div>
           </div>
-          <div style={{ color: "#94a3b8", fontSize: "13px" }}>
-            상태: <b style={{ color: "#34d399" }}>실시간 연동 중</b>
+          
+          <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+            {/* 💡 상단 헤더 영역에 현재 페이지 이름(파일명) 표시 */}
+            <div style={{ color: "#94a3b8", fontSize: "12px", background: "rgba(255, 255, 255, 0.05)", padding: "4px 10px", borderRadius: "4px", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
+              📄 현재 파일: <span style={{ color: "#38bdf8" }}>
+                {currentTab === "assembly" && "AssemblyPracticePage.tsx"}
+                {currentTab === "main" && "PumpPerformancePage.tsx"}
+                {currentTab === "parts" && "PartManagementPage.tsx"}
+              </span>
+            </div>
+            <div style={{ color: "#94a3b8", fontSize: "13px" }}>
+              상태: <b style={{ color: "#34d399" }}>실시간 연동 중</b>
+            </div>
           </div>
         </div>
 
         {/* 메인 콘텐트 영역 */}
-        {currentTab === "none" && (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "#0f172a",
-              color: "#64748b",
-              fontSize: "15px",
-            }}
-          >
-            상단 메뉴에서 원하는 항목을 선택해 주세요.
-          </div>
-        )}
-
         {currentTab === "main" && <PumpPerformancePage />}
         
-        {/* 기존 WaterFireFightingPage 대신 직접 실습 뷰어를 연결하려면 AssemblyPracticePage로 교체 사용 가능 */}
+        {/* 수계소화설비 시공실무가 기본 화면으로 실행됨 */}
         {currentTab === "assembly" && <AssemblyPracticePage />}
 
         {currentTab === "parts" && <PartManagementPage />}

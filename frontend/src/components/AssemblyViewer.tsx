@@ -324,6 +324,28 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      
+      {/* 💡 파일명 표기 뱃지 */}
+      <div
+        style={{
+          position: "absolute",
+          top: "8px",
+          left: "8px",
+          background: "rgba(15, 23, 42, 0.85)",
+          color: "#38bdf8",
+          padding: "3px 8px",
+          borderRadius: "4px",
+          fontSize: "11px",
+          fontWeight: 600,
+          zIndex: 30,
+          border: "1px solid rgba(56, 189, 248, 0.3)",
+          pointerEvents: "none", // 마우스 클릭이 뒤쪽 캔버스나 버튼으로 통과되도록 설정
+        }}
+      >
+        AssemblyViewer.tsx
+      </div>
+
+      {/* 기존 컴포넌트 내부 콘텐츠들... */}
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
 
       <div

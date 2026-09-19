@@ -55,6 +55,7 @@ const InspectionPanel = forwardRef<InspectionPanelRef>((_, ref) => {
   return (
     <div
       style={{
+        position: "relative",
         width: "100%",
         height: "100%",
         background: "transparent",
@@ -65,8 +66,29 @@ const InspectionPanel = forwardRef<InspectionPanelRef>((_, ref) => {
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         display: "flex",
         flexDirection: "column",
-      }}
-    >
+      }}>
+
+      {/* 💡 파일명 표기 뱃지 */}
+      <div
+        style={{
+          position: "absolute",
+          top: "8px",
+          left: "8px",
+          background: "rgba(15, 23, 42, 0.85)",
+          color: "#38bdf8",
+          padding: "3px 8px",
+          borderRadius: "4px",
+          fontSize: "11px",
+          fontWeight: 600,
+          zIndex: 30,
+          border: "1px solid rgba(56, 189, 248, 0.3)",
+          pointerEvents: "none", // 마우스 클릭이 뒤쪽 캔버스나 버튼으로 통과되도록 설정
+        }}
+      >
+        InspectionPanel.tsx
+      </div>
+
+      {/* 기존 컴포넌트 내부 콘텐츠들... */}
       <div
         style={{
           display: "flex",
