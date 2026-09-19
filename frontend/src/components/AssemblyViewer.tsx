@@ -1,5 +1,5 @@
 // src/components/AssemblyViewer.tsx
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -8,6 +8,7 @@ import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { buildPumpGroup } from "./parts/Pump_024_45";
 import { buildFlexibleJointGroup } from "./parts/FlexibleJoint_40A";
+import { useAssemblyStore } from "../store/useAssemblyStore";
 
 interface AddedPart {
   id: string;
@@ -22,9 +23,16 @@ interface AssemblyViewerProps {
 
 export default function AssemblyViewer({ addedParts, onScoreCalculated }: AssemblyViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const jointRefs = useRef<Map<string, THREE.Group>>(new Map());
+  
+  // Three.js 핵심 인스턴스들을 Ref로 관리하여 재생성 방지
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const outlinePassRef = useRef<OutlinePass | null>(null);
+  
+  const jointGroupsRef = useRef<Map<string, THREE.Group>>(new Map());
   const pumpRef = useRef<THREE.Group | null>(null);
 
+  const { partsState, updatePartTransform } = useAssemblyStore();
   const [connectionStatus, setConnectionStatus] = useState<string>("1단계: 조립할 [조인트의 접합면(스냅 서피스)]을 클릭하세요.");
   
   const selectedSourceRef = useRef<{ 
@@ -33,14 +41,29 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
     snapMesh: THREE.Mesh 
   } | null>(null);
 
+  // 💡 클로저 문제 해결을 위한 최신 props/state 저장용 Ref
+  const addedPartsRef = useRef(addedParts);
+  useEffect(() => {
+    addedPartsRef.current = addedParts;
+  }, [addedParts]);
+
+  const partsStateRef = useRef(partsState);
+  useEffect(() => {
+    partsStateRef.current = partsState;
+  }, [partsState]);
+
+  // ==========================================
+  // 1. 3D 씬 초기화 (마운트 시 단 1회 실행)
+  // ==========================================
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
+    
     container.innerHTML = "";
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0f172a);
+    sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 1, 5000);
     camera.position.set(300, 350, 550);
@@ -49,65 +72,49 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
 
     const composer = new EffectComposer(renderer);
-    const renderPass = new RenderPass(scene, camera);
-    composer.addPass(renderPass);
+    composer.addPass(new RenderPass(scene, camera));
 
     const outlinePass = new OutlinePass(
       new THREE.Vector2(container.clientWidth, container.clientHeight),
       scene,
       camera
     );
-    
     outlinePass.visibleEdgeColor = new THREE.Color("#38bdf8"); 
     outlinePass.hiddenEdgeColor = new THREE.Color("#1e293b");
     outlinePass.edgeStrength = 5.0; 
     outlinePass.edgeGlow = 2.0;    
     composer.addPass(outlinePass);
-
-    const outputPass = new OutputPass();
-    composer.addPass(outputPass);
+    composer.addPass(new OutputPass());
+    outlinePassRef.current = outlinePass;
 
     const orbitControls = new OrbitControls(camera, renderer.domElement);
     orbitControls.enableDamping = true;
     orbitControls.target.set(100, 150, 0);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-    scene.add(ambientLight);
-
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
     dirLight.position.set(300, 600, 400);
     scene.add(dirLight);
 
-    const gridHelper = new THREE.GridHelper(1000, 20, 0x38bdf8, 0x334155);
-    scene.add(gridHelper);
+    scene.add(new THREE.GridHelper(1000, 20, 0x38bdf8, 0x334155));
 
-    // 1. 펌프 생성
+    // 기본 펌프 생성
     const pumpGroup = buildPumpGroup();
     pumpGroup.position.set(0, 0, 0);
     pumpGroup.rotation.y = -Math.PI / 2;
     scene.add(pumpGroup);
     pumpRef.current = pumpGroup;
 
-    jointRefs.current.clear();
-
-    // 2. 동적 부품 생성
-    addedParts.forEach((part, index) => {
-      const jointGroup = buildFlexibleJointGroup(230);
-      jointGroup.position.set(250 + index * 80, 150, 120);
-      jointGroup.rotation.set(0, 0, Math.PI / 2);
-
-      scene.add(jointGroup);
-      jointRefs.current.set(part.instanceId, jointGroup);
-    });
-
+    // Raycaster 및 이벤트 핸들러
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    // 🖱️ 마우스 호버 (오직 snap_surface가 포함된 메쉬만 타겟팅)
     const onMouseMove = (event: MouseEvent) => {
-      const rect = renderer.domElement.getBoundingClientRect();
+      if (!rendererRef.current || !outlinePassRef.current) return;
+      const rect = rendererRef.current.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
@@ -117,47 +124,44 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
       if (intersects.length > 0) {
         const hitObject = intersects[0].object as THREE.Mesh;
         if (hitObject.name.toLowerCase().includes("snap_surface")) {
-          renderer.domElement.style.cursor = "pointer";
-          outlinePass.selectedObjects = [hitObject]; 
+          rendererRef.current.domElement.style.cursor = "pointer";
+          outlinePassRef.current.selectedObjects = [hitObject]; 
           return;
         }
       }
 
       if (selectedSourceRef.current) {
-        outlinePass.selectedObjects = [selectedSourceRef.current.snapMesh];
+        outlinePassRef.current.selectedObjects = [selectedSourceRef.current.snapMesh];
       } else {
-        outlinePass.selectedObjects = []; 
+        outlinePassRef.current.selectedObjects = []; 
       }
-      renderer.domElement.style.cursor = "default";
+      rendererRef.current.domElement.style.cursor = "default";
     };
 
-    // 🖱️ 마우스 클릭 이벤트
     const onClick = (event: MouseEvent) => {
-      const rect = renderer.domElement.getBoundingClientRect();
+      if (!rendererRef.current || !outlinePassRef.current || !sceneRef.current) return;
+      const rect = rendererRef.current.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(scene.children, true);
+      const intersects = raycaster.intersectObjects(sceneRef.current.children, true);
 
       if (intersects.length > 0) {
         const hitObject = intersects[0].object as THREE.Mesh;
-        
-        // 클릭한 대상이 스냅 서피스가 아니면 무시
         if (!hitObject.name.toLowerCase().includes("snap_surface")) return;
 
-        // 1. 조인트의 스냅 서피스 클릭 체크
-        let clickedJointPart: AddedPart | null = null;
-        let clickedJointGroup: THREE.Group | null = null;
+        let clickedPart: AddedPart | null = null;
+        let clickedGroup: THREE.Group | null = null;
 
-        addedParts.forEach((part) => {
-          const group = jointRefs.current.get(part.instanceId);
+        addedPartsRef.current.forEach((part) => {
+          const group = jointGroupsRef.current.get(part.instanceId);
           if (group) {
             let curr: THREE.Object3D | null = hitObject;
             while (curr) {
               if (curr === group) {
-                clickedJointPart = part;
-                clickedJointGroup = group;
+                clickedPart = part;
+                clickedGroup = group;
                 break;
               }
               curr = curr.parent;
@@ -165,18 +169,20 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
           }
         });
 
-        if (clickedJointPart && clickedJointGroup) {
+        // 조인트 선택
+        if (clickedPart && clickedGroup) {
+          const partData = clickedPart as AddedPart;
           selectedSourceRef.current = { 
-            instanceId: (clickedJointPart as AddedPart).instanceId, 
-            group: clickedJointGroup, 
+            instanceId: partData.instanceId, 
+            group: clickedGroup, 
             snapMesh: hitObject 
           };
-          outlinePass.selectedObjects = [hitObject];
-          setConnectionStatus(`✔ 조인트 접합면 선택됨! 연결할 [펌프 등의 접합면]을 클릭하세요.`);
+          outlinePassRef.current.selectedObjects = [hitObject];
+          setConnectionStatus(`✔ [${partData.name}] 접합면 선택됨! 펌프의 연결면을 클릭하세요.`);
           return;
         }
 
-        // 2. 다른 부품(예: 펌프)의 스냅 서피스 클릭 체크
+        // 펌프 타겟 선택
         let isTargetClicked = false;
         if (pumpRef.current) {
           let curr: THREE.Object3D | null = hitObject;
@@ -191,25 +197,20 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
 
         if (isTargetClicked) {
           if (selectedSourceRef.current) {
-            const { group: sourceGroup, snapMesh: sourceSnap } = selectedSourceRef.current;
+            const { instanceId: sourceId, group: sourceGroup, snapMesh: sourceSnap } = selectedSourceRef.current;
 
-            scene.updateMatrixWorld(true);
+            sceneRef.current.updateMatrixWorld(true);
             pumpRef.current?.updateMatrixWorld(true);
             sourceGroup.updateMatrixWorld(true);
             hitObject.updateMatrixWorld(true);
 
-            // 타겟 스냅 서피스의 월드 매트릭스 기준으로 정렬
             const targetMatrix = hitObject.matrixWorld.clone();
-
-            // 조인트 그룹 기준 소스 스냅 메쉬의 로컬 매트릭스 계산
             const mWorldToGroup = sourceGroup.matrixWorld.clone().invert();
             const snapLocalMatrix = sourceSnap.matrixWorld.clone().premultiply(mWorldToGroup);
 
-            // 조인트 그룹의 새로운 월드 매트릭스 산출
             const invSnapLocal = snapLocalMatrix.clone().invert();
             const newGroupMatrix = targetMatrix.clone().multiply(invSnapLocal);
 
-            // 부모 좌표계(Scene) 반영하여 조인트 그룹 위치/회전 적용
             if (sourceGroup.parent) {
               const parentInv = sourceGroup.parent.matrixWorld.clone().invert();
               sourceGroup.matrix.copy(parentInv.multiply(newGroupMatrix));
@@ -218,11 +219,17 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
             }
             sourceGroup.matrix.decompose(sourceGroup.position, sourceGroup.quaternion, sourceGroup.scale);
 
-            setConnectionStatus(`🎉 찰칵! 접합면이 정확히 일치하여 완벽하게 조립되었습니다.`);
+            updatePartTransform(
+              sourceId, 
+              [sourceGroup.position.x, sourceGroup.position.y, sourceGroup.position.z],
+              [sourceGroup.rotation.x, sourceGroup.rotation.y, sourceGroup.rotation.z]
+            );
+
+            setConnectionStatus(`🎉 찰칵! 부품이 정확히 조립되었습니다.`);
             selectedSourceRef.current = null;
-            outlinePass.selectedObjects = [];
+            outlinePassRef.current.selectedObjects = [];
           } else {
-            setConnectionStatus(`⚠️ 경고: 먼저 [조인트의 접합면]을 클릭하여 선택해주세요.`);
+            setConnectionStatus(`⚠️ 경고: 먼저 [조인트의 접합면]을 클릭해 주세요.`);
           }
         }
       }
@@ -261,11 +268,55 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
       }
       container.innerHTML = "";
     };
-  }, [addedParts]);
+  }, []); // 👈 빈 배열: 씬 생성은 딱 한 번만 수행
+
+  // ==========================================
+  // 2. 부품 목록/상태 변경 시 씬 동기화 (최적화 포인트)
+  // ==========================================
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    const currentMap = jointGroupsRef.current;
+    const activeInstanceIds = new Set(addedParts.map((p) => p.instanceId));
+
+    // 1) 삭제된 부품은 씬에서 제거
+    currentMap.forEach((group, instanceId) => {
+      if (!activeInstanceIds.has(instanceId)) {
+        scene.remove(group);
+        currentMap.delete(instanceId);
+      }
+    });
+
+    // 2) 신규 부품 추가 또는 기존 부품 상태(위치/회전) 업데이트
+    addedParts.forEach((part, index) => {
+      let group = currentMap.get(part.instanceId);
+
+      if (!group) {
+        // 새로 추가된 부품인 경우 3D 객체 생성
+        group = buildFlexibleJointGroup(230);
+        scene.add(group);
+        currentMap.set(part.instanceId, group);
+      }
+
+      // 위치 및 회전 적용 (스토어 저장값 또는 기본값)
+      const savedState = partsState ? partsState[part.instanceId] : undefined;
+      if (savedState) {
+        group.position.set(savedState.position[0], savedState.position[1], savedState.position[2]);
+        group.rotation.set(savedState.rotation[0], savedState.rotation[1], savedState.rotation[2]);
+      } else {
+        const defaultPos: [number, number, number] = [250 + (index * 100), 150, 120 + ((index % 2) * 60)];
+        const defaultRot: [number, number, number] = [0, 0, Math.PI / 2];
+        
+        group.position.set(defaultPos[0], defaultPos[1], defaultPos[2]);
+        group.rotation.set(defaultRot[0], defaultRot[1], defaultRot[2]);
+      }
+    });
+  }, [addedParts, partsState]);
 
   const handleSubmitInspection = () => {
-    if (jointRefs.current.size === 0) {
-      alert("조립할 부품이 없습니다. 부품을 추가해주세요.");
+    if (jointGroupsRef.current.size === 0) {
+      alert("조립할 부품이 없습니다.");
       return;
     }
     onScoreCalculated(100);
@@ -294,14 +345,7 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
         {connectionStatus}
       </div>
 
-      <div
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "20px",
-          zIndex: 20,
-        }}
-      >
+      <div style={{ position: "absolute", top: "20px", right: "20px", zIndex: 20 }}>
         <button
           onClick={handleSubmitInspection}
           style={{

@@ -1,17 +1,15 @@
 // src/components/parts/FlexibleJoint_40A.tsx
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 export interface FlexibleJoint_40AProps {
-  jointType?: "standard" | "flanged";
   lengthMm?: number; // 도면 규격 L=230mm 기본
-  orientation?: "horizontal" | "vertical"; // 방향 선택 옵션 추가 (기본값: horizontal)
+  orientation?: "horizontal" | "vertical"; // 방향 선택 옵션 (기본값: horizontal)
 }
 
 /**
  * 40A 플렉시블 조인트 3D 모델을 생성하여 THREE.Group으로 반환하는 공통 함수
- * - orientation이 "vertical"인 경우 세로 방향(Y축 기준)으로 모델과 스냅 서피스가 생성됩니다.
  */
 export function buildFlexibleJointGroup(
   lengthMm: number = 230,
@@ -89,18 +87,18 @@ export function buildFlexibleJointGroup(
   );
   flangeGeometry.center();
 
-  // 조립용 스냅 서피스 재질 (두께 0, 선명한 빨간색, 양면 렌더링)
+  // 조립용 스냅 서피스 재질 (투명도 0)
   const snapMat = new THREE.MeshBasicMaterial({
     color: 0xef4444,
     transparent: true,
-    opacity: 0.0, // 👈 투명도를 0으로 설정
-    depthWrite: false, // 투명 부품 간 렌더링 꼬임 방지
+    opacity: 0.0,
+    depthWrite: false,
     side: THREE.DoubleSide,
   });
 
   const isVertical = orientation === "vertical";
 
-  // 1) 첫 번째 플랜지 (Horizontal인 경우 좌측[-X], Vertical인 경우 하단[-Y])
+  // 1) 첫 번째 플랜지 (측면/하단)
   const firstFlange = new THREE.Mesh(flangeGeometry, flangeMat);
   firstFlange.name = isVertical ? "flange_bottom" : "flange_left";
   if (isVertical) {
@@ -146,7 +144,7 @@ export function buildFlexibleJointGroup(
     jointGroup.add(bolt);
   }
 
-  // 2) 두 번째 플랜지 (Horizontal인 경우 우측[+X], Vertical인 경우 상단[+Y])
+  // 2) 두 번째 플랜지 (측면/상단)
   const secondFlange = new THREE.Mesh(flangeGeometry, flangeMat);
   secondFlange.name = isVertical ? "flange_top" : "flange_right";
   if (isVertical) {
@@ -231,7 +229,7 @@ export function buildFlexibleJointGroup(
   jointGroup.add(braidMesh);
 
   // 5) 실링 칼라 (Collar)
-  [-bellowsLength / 2 - 5, bellowsLength / 2 + 5].forEach((pos) => {
+  ([-bellowsLength / 2 - 5, bellowsLength / 2 + 5] as number[]).forEach((pos) => {
     const collar = new THREE.Mesh(
       new THREE.CylinderGeometry(pipeRadius + 2, bellowsRadius + 2, 12, 32),
       rubberCollarMat
@@ -252,7 +250,6 @@ export function buildFlexibleJointGroup(
  * 단독 렌더링용 메인 컴포넌트 (단품 뷰어용)
  */
 export default function FlexibleJoint_40A({
-  jointType = "flanged",
   lengthMm = 230,
   orientation = "horizontal",
 }: FlexibleJoint_40AProps) {
@@ -312,14 +309,29 @@ export default function FlexibleJoint_40A({
     };
     window.addEventListener("resize", handleResize);
 
+    // 💡 메모리 누수 방지 및 자원 정리(Cleanup)
     return () => {
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
       controls.dispose();
-      renderer.dispose();
+
+      scene.traverse((object: THREE.Object3D) => {
+        if (object instanceof THREE.Mesh) {
+          if (object.geometry) object.geometry.dispose();
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach((mat: any) => mat.dispose());
+            } else {
+              object.material.dispose();
+            }
+          }
+        }
+      });
+
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
+      renderer.dispose();
     };
   }, [lengthMm, orientation]);
 

@@ -1,27 +1,36 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+// src/context/PartContext.tsx
+import React, { createContext, useContext, useState } from "react";
+import type { ReactNode } from "react"; // 💡 타입 전용 import로 수정
 
 interface PartContextType {
   selectedPartIds: string[];
   setSelectedPartIds: React.Dispatch<React.SetStateAction<string[]>>;
   togglePart: (id: string) => void;
   selectSinglePart: (id: string) => void;
+  addPart: (id: string) => void; // 💡 부품 추가(누적) 함수 추가
   clearSelection: () => void;
 }
 
 const PartContext = createContext<PartContextType | undefined>(undefined);
 
 export const PartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // 기본값으로 1개 부품만 세팅
   const [selectedPartIds, setSelectedPartIds] = useState<string[]>(["pump-024-45"]);
 
-  // 단일 선택 강제 함수: 어떤 부품을 클릭하든 배열 전체를 [id] 1개로 교체
+  // 단일 선택 (기존 유지)
   const selectSinglePart = (id: string) => {
     setSelectedPartIds([id]);
   };
 
-  // 기존 togglePart가 있다면 다중 선택이 되지 않도록 덮어쓰기 처리
+  // 💡 토글 함수: 이미 있으면 제거, 없으면 추가 (다중 선택 지원용)
   const togglePart = (id: string) => {
-    setSelectedPartIds([id]);
+    setSelectedPartIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // 💡 부품을 중복해서 여러 개 추가할 수 있는 누적 함수 (플렉시블 조인트 여러 개 추가용)
+  const addPart = (id: string) => {
+    setSelectedPartIds((prev) => [...prev, id]);
   };
 
   const clearSelection = () => {
@@ -35,6 +44,7 @@ export const PartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSelectedPartIds,
         togglePart,
         selectSinglePart,
+        addPart,
         clearSelection,
       }}
     >

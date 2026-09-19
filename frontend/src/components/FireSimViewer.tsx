@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef } from "react";
+﻿import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 interface FireSimViewerProps {
@@ -251,6 +251,16 @@ export default function FireSimViewer({
       resizeObserver.disconnect();
       currentMount.removeEventListener("click", handleCanvasClick);
       cancelAnimationFrame(animationFrameId);
+
+      // 💡 WebGL 렌더러 리소스 명시적 해제 추가
+      renderer.dispose();
+      renderer.forceContextLoss(); // WebGL 컨텍스트 강제 소멸
+
+      // 3. 캔버스 DOM 요소 완전 제거
+      if (renderer.domElement && renderer.domElement.parentNode) {
+        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      }
+
       if (currentMount) {
         currentMount.innerHTML = "";
       }
@@ -271,6 +281,6 @@ export default function FireSimViewer({
         border: "1px solid rgba(255, 255, 255, 0.1)",
         cursor: "pointer",
       }}
-    />
+    /> 
   );
 }

@@ -1,15 +1,23 @@
 // src/pages/PartManagementPage.tsx
-import React from "react";
 import ComponentList from "../components/ComponentList";
 import Pump_024_45 from "../components/parts/Pump_024_45";
 import FlexibleJoint_40A from "../components/parts/FlexibleJoint_40A";
 import { usePartContext } from "../context/PartContext";
 
 export default function PartManagementPage() {
-  const { selectedPartIds } = usePartContext();
+  // 💡 사용하시는 Context 구조에 맞추어 세터(setter) 함수를 가져옵니다. 
+  // (만약 이름이 다르다면 setSelectedPartIds 부분을 컨텍스트에 맞게 수정해주세요)
+  const { selectedPartIds, setSelectedPartIds } = usePartContext();
 
   // 현재 선택된 단 1개의 부품 ID
   const activePartId = selectedPartIds[0] || "pump-024-45";
+
+  // 💡 ComponentList에서 부품을 선택했을 때 실행될 핸들러 함수 추가
+  const handleSelect = (partId: string) => {
+    if (setSelectedPartIds) {
+      setSelectedPartIds([partId]);
+    }
+  };
 
   // 선택된 ID에 따른 부품 명칭 매핑
   const getPartName = (id: string) => {
@@ -41,8 +49,8 @@ export default function PartManagementPage() {
         background: "#0f172a",
       }}
     >
-      {/* 좌측 단일 선택 사이드바 */}
-      <ComponentList />
+      {/* 좌측 단일 선택 사이드바 (handleSelect 함수 전달) */}
+      <ComponentList activePartId={activePartId} onSelectPart={handleSelect} />
 
       {/* 우측 메인 뷰어 영역 */}
       <div

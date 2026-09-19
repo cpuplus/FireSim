@@ -1,6 +1,6 @@
 // src/components/ComponentList.tsx
-import React, { useState } from "react";
-import { usePartContext } from "../context/PartContext";
+import { useState } from "react";
+import { usePartContext } from "../context/PartContext"; // 💡 Context 불러오기
 
 interface MenuItem {
   id: string;
@@ -12,6 +12,11 @@ interface MenuCategory {
   id: string;
   name: string;
   items: MenuItem[];
+}
+
+interface ComponentListProps {
+  activePartId: string;
+  onSelectPart: (partId: string) => void;
 }
 
 const MENU_DATA: MenuCategory[] = [
@@ -65,17 +70,12 @@ const MENU_DATA: MenuCategory[] = [
   },
 ];
 
-export default function ComponentList() {
-  const { selectedPartIds, selectSinglePart } = usePartContext();
+export default function ComponentList({ activePartId, onSelectPart }: ComponentListProps) {
+  // 💡 Context에서 다중 추가 함수(addPart) 가져오기
+  const { addPart } = usePartContext();
 
-  // 열린 1차 카테고리 (기본값: 배관 부속품)
   const [openCategoryId, setOpenCategoryId] = useState<string | null>("cat-fittings");
-  
-  // 열린 2차 서브메뉴 ID (기본값: 플렉시블 조인트)
   const [openSubMenuId, setOpenSubMenuId] = useState<string | null>("flexible-joint");
-
-  // 현재 선택된 단 1개의 부품 ID
-  const activePartId = selectedPartIds[0] || "flexible-joint-40a";
 
   const toggleCategory = (id: string) => {
     setOpenCategoryId((prev) => (prev === id ? null : id));
@@ -83,6 +83,12 @@ export default function ComponentList() {
 
   const toggleSubMenu = (id: string) => {
     setOpenSubMenuId((prev) => (prev === id ? null : id));
+  };
+
+  // 💡 부품 클릭 시 누적 추가(addPart)와 기존 선택(onSelectPart)을 함께 처리
+  const handlePartClick = (id: string) => {
+    addPart(id);      // 여러 개가 누적되도록 추가
+    onSelectPart(id); // 기존 선택 상태 동기화
   };
 
   return (
@@ -118,7 +124,6 @@ export default function ComponentList() {
 
           return (
             <div key={category.id}>
-              {/* 1차 카테고리 (펌프, 배관, 배관 부속품...) */}
               <div
                 onClick={() => toggleCategory(category.id)}
                 style={{
@@ -140,7 +145,6 @@ export default function ComponentList() {
                 </span>
               </div>
 
-              {/* 2차 항목 목록 */}
               {isOpen && (
                 <div
                   style={{
@@ -160,7 +164,6 @@ export default function ComponentList() {
 
                     return (
                       <div key={item.id}>
-                        {/* 하위 자식이 있는 경우 (플렉시블 조인트) */}
                         {hasChildren ? (
                           <>
                             <div
@@ -182,7 +185,6 @@ export default function ComponentList() {
                               </span>
                             </div>
 
-                            {/* 3차 하위 규격 (40A) */}
                             {isSubOpen && (
                               <div
                                 style={{
@@ -200,7 +202,7 @@ export default function ComponentList() {
                                   return (
                                     <div
                                       key={child.id}
-                                      onClick={() => selectSinglePart(child.id)}
+                                      onClick={() => handlePartClick(child.id)} // 💡 addPart가 포함된 핸들러 연결
                                       style={{
                                         padding: "6px 10px",
                                         fontSize: "13px",
@@ -224,9 +226,8 @@ export default function ComponentList() {
                             )}
                           </>
                         ) : (
-                          /* 일반 항목 (엘보, 티, 크로스...) */
                           <div
-                            onClick={() => selectSinglePart(item.id)}
+                            onClick={() => handlePartClick(item.id)} // 💡 addPart가 포함된 핸들러 연결
                             style={{
                               padding: "8px 12px",
                               fontSize: "14px",

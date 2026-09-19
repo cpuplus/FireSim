@@ -1,7 +1,6 @@
 ﻿// src/App.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import PumpPerformancePage from "./pages/PumpPerformancePage";
-import WaterFireFightingPage from "./pages/WaterFireFightingPage";
 import AssemblyPracticePage from "./pages/AssemblyPracticePage"; // 시공실무/조립 실습 페이지
 import PartManagementPage from "./pages/PartManagementPage";
 import { PartProvider } from "./context/PartContext";

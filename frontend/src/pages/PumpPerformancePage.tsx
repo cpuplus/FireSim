@@ -1,5 +1,5 @@
 // src/pages/PumpPerformancePage.tsx
-import React, { useRef } from "react";
+import { useRef } from "react";
 import FireSimViewer from "../components/FireSimViewer";
 import InspectionPanel from "../components/InspectionPanel";
 import type { InspectionPanelRef } from "../components/InspectionPanel";

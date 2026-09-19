@@ -1,5 +1,5 @@
 // src/components/parts/Pump_024_45.tsx
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
@@ -395,7 +395,7 @@ export default function Pump_024_45({ pumpType }: PumpProps) {
       cancelAnimationFrame(animationFrameId);
       controls.dispose();
 
-      scene.traverse((object: any) => {
+      scene.traverse((object: THREE.Object3D) => {
         if (object instanceof THREE.Mesh) {
           if (object.geometry) object.geometry.dispose();
           if (object.material) {

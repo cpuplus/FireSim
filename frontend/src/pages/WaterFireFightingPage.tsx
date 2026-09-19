@@ -1,5 +1,5 @@
 // src/pages/WaterFireFightingPage.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import ComponentList from "../components/ComponentList";
 import Pump_024_45 from "../components/parts/Pump_024_45";
 import FlexibleJoint_40A from "../components/parts/FlexibleJoint_40A";

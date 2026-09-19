@@ -1,5 +1,5 @@
 // src/pages/AssemblyPracticePage.tsx
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import AssemblyViewer from "../components/AssemblyViewer";
 import { usePartContext } from "../context/PartContext";
 
@@ -10,19 +10,46 @@ interface AddedPart {
 }
 
 export default function AssemblyPracticePage() {
-  const { selectedPartIds } = usePartContext();
+  // 💡 Context에서 선택된 부품 ID 목록과 추가 함수 등을 가져옵니다.
+  const { selectedPartIds, addPart } = usePartContext(); 
   
   // 사용자가 추가한 부품 목록 (기본 펌프 외에 동적으로 추가/삭제)
   const [addedParts, setAddedParts] = useState<AddedPart[]>([
     { id: "flexible-joint-40a", name: "40A 플렉시블 조인트", instanceId: "joint-1" }
   ]);
 
-  const [resetKey, setResetKey] = useState(0);
+    const [resetKey, setResetKey] = useState(0);
   const [submittedScore, setSubmittedScore] = useState<number | null>(null);
 
-  // 부품 추가하기 (예: 플렉시블 조인트 추가)
+  // 💡 Context의 선택 상태(사이드바 등에서 부품을 누를 때)가 바뀔 때마다 addedParts에 반영
+  useEffect(() => {
+    if (selectedPartIds && selectedPartIds.length > 0) {
+      const newParts: AddedPart[] = selectedPartIds.map((id, index) => {
+        // ID에 따른 부품 이름 매핑 (필요시 확장 가능)
+        let name = "40A 플렉시블 조인트";
+        if (id.includes("pipe")) name = "배관 부품";
+        else if (id.includes("valve")) name = "밸브 부품";
+        else if (id.includes("gauge") || id.includes("meter")) name = "계기류";
+
+        return {
+          id: id,
+          name: name,
+          instanceId: `instance-${id}-${index}-${Date.now()}`
+        };
+      });
+      
+      setAddedParts(newParts);
+    }
+  }, [selectedPartIds]);
+
+  // 부품 추가하기 버튼 (수동 추가용)
   const handleAddFlexibleJoint = () => {
     const newInstanceId = `joint-${Date.now()}`;
+    
+    // 1. Context 상태에도 추가하여 싱크를 맞춤
+    addPart("flexible-joint-40a");
+
+    // 2. 화면 표시용 상태에 추가
     setAddedParts((prev) => [
       ...prev,
       { id: "flexible-joint-40a", name: "40A 플렉시블 조인트", instanceId: newInstanceId },
