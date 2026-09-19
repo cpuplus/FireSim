@@ -25,12 +25,12 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
   const jointRefs = useRef<Map<string, THREE.Group>>(new Map());
   const pumpRef = useRef<THREE.Group | null>(null);
 
-  const [connectionStatus, setConnectionStatus] = useState<string>("1단계: 조립할 [플렉시블 조인트 플랜지]를 마우스로 클릭하세요.");
+  const [connectionStatus, setConnectionStatus] = useState<string>("1단계: 조립할 [조인트의 접합면(스냅 서피스)]을 클릭하세요.");
   
   const selectedSourceRef = useRef<{ 
     instanceId: string; 
     group: THREE.Group; 
-    flangeMesh: THREE.Mesh 
+    snapMesh: THREE.Mesh 
   } | null>(null);
 
   useEffect(() => {
@@ -48,7 +48,6 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(renderer.domElement);
 
     const composer = new EffectComposer(renderer);
@@ -86,14 +85,14 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
 
     // 1. 펌프 생성
     const pumpGroup = buildPumpGroup();
-    pumpGroup.position.set(0, 35, 0);
+    pumpGroup.position.set(0, 0, 0);
     pumpGroup.rotation.y = -Math.PI / 2;
     scene.add(pumpGroup);
     pumpRef.current = pumpGroup;
 
     jointRefs.current.clear();
 
-    // 2. 동적 부품 생성 (TransformControls 제거됨)
+    // 2. 동적 부품 생성
     addedParts.forEach((part, index) => {
       const jointGroup = buildFlexibleJointGroup(230);
       jointGroup.position.set(250 + index * 80, 150, 120);
@@ -103,10 +102,10 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
       jointRefs.current.set(part.instanceId, jointGroup);
     });
 
-    // 🖱️ 마우스 호버 이벤트
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
+    // 🖱️ 마우스 호버 (오직 snap_surface가 포함된 메쉬만 타겟팅)
     const onMouseMove = (event: MouseEvent) => {
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -117,26 +116,22 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
 
       if (intersects.length > 0) {
         const hitObject = intersects[0].object as THREE.Mesh;
-        const name = hitObject.name.toLowerCase();
-
-        const isConnectable = name.includes("flange") || name.includes("screw") || name.includes("thread");
-
-        if (isConnectable) {
+        if (hitObject.name.toLowerCase().includes("snap_surface")) {
           renderer.domElement.style.cursor = "pointer";
           outlinePass.selectedObjects = [hitObject]; 
           return;
         }
       }
 
-      // 선택된 소스가 있으면 소스 플랜지는 계속 아웃라인 유지
       if (selectedSourceRef.current) {
-        outlinePass.selectedObjects = [selectedSourceRef.current.flangeMesh];
+        outlinePass.selectedObjects = [selectedSourceRef.current.snapMesh];
       } else {
         outlinePass.selectedObjects = []; 
       }
       renderer.domElement.style.cursor = "default";
     };
 
+    // 🖱️ 마우스 클릭 이벤트
     const onClick = (event: MouseEvent) => {
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -147,12 +142,11 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
 
       if (intersects.length > 0) {
         const hitObject = intersects[0].object as THREE.Mesh;
-        const name = hitObject.name.toLowerCase();
+        
+        // 클릭한 대상이 스냅 서피스가 아니면 무시
+        if (!hitObject.name.toLowerCase().includes("snap_surface")) return;
 
-        const isConnectable = name.includes("flange") || name.includes("screw") || name.includes("thread");
-        if (!isConnectable) return;
-
-        // 1. 조인트 플랜지 클릭 체크
+        // 1. 조인트의 스냅 서피스 클릭 체크
         let clickedJointPart: AddedPart | null = null;
         let clickedJointGroup: THREE.Group | null = null;
 
@@ -175,51 +169,45 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
           selectedSourceRef.current = { 
             instanceId: (clickedJointPart as AddedPart).instanceId, 
             group: clickedJointGroup, 
-            flangeMesh: hitObject 
+            snapMesh: hitObject 
           };
           outlinePass.selectedObjects = [hitObject];
-          setConnectionStatus(`✔ 조인트 플랜지 선택됨! 연결할 [펌프 플랜지]를 클릭하세요.`);
+          setConnectionStatus(`✔ 조인트 접합면 선택됨! 연결할 [펌프 등의 접합면]을 클릭하세요.`);
           return;
         }
 
-        // 2. 펌프 플랜지 클릭 체크
-        let isPumpClicked = false;
+        // 2. 다른 부품(예: 펌프)의 스냅 서피스 클릭 체크
+        let isTargetClicked = false;
         if (pumpRef.current) {
           let curr: THREE.Object3D | null = hitObject;
           while (curr) {
             if (curr === pumpRef.current) {
-              isPumpClicked = true;
+              isTargetClicked = true;
               break;
             }
             curr = curr.parent;
           }
         }
 
-        if (isPumpClicked) {
+        if (isTargetClicked) {
           if (selectedSourceRef.current) {
-            const { group: sourceGroup, flangeMesh: sourceFlange } = selectedSourceRef.current;
+            const { group: sourceGroup, snapMesh: sourceSnap } = selectedSourceRef.current;
 
             scene.updateMatrixWorld(true);
             pumpRef.current?.updateMatrixWorld(true);
             sourceGroup.updateMatrixWorld(true);
             hitObject.updateMatrixWorld(true);
 
-            // 펌프 플랜지의 타겟 월드 매트릭스
+            // 타겟 스냅 서피스의 월드 매트릭스 기준으로 정렬
             const targetMatrix = hitObject.matrixWorld.clone();
 
-            // 💡 플랜지 겹침 방지: 조인트 플랜지가 펌프 플랜지 표면에 정확히 맞닿도록 Z축 방향 오프셋 적용
-            // 방향이 안쪽으로 파고든다면 부호(-)를 조정하거나 값을 변경하세요.
-            const thicknessOffset = 5; // 필요시 수치 조절
-            const offsetMatrix = new THREE.Matrix4().makeTranslation(0, 0, thicknessOffset);
-            const adjustedTargetMatrix = targetMatrix.clone().multiply(offsetMatrix);
-
-            // 조인트 그룹 기준 소스 플랜지의 로컬 매트릭스 계산
+            // 조인트 그룹 기준 소스 스냅 메쉬의 로컬 매트릭스 계산
             const mWorldToGroup = sourceGroup.matrixWorld.clone().invert();
-            const flangeLocalMatrix = sourceFlange.matrixWorld.clone().premultiply(mWorldToGroup);
+            const snapLocalMatrix = sourceSnap.matrixWorld.clone().premultiply(mWorldToGroup);
 
             // 조인트 그룹의 새로운 월드 매트릭스 산출
-            const invFlangeLocal = flangeLocalMatrix.clone().invert();
-            const newGroupMatrix = adjustedTargetMatrix.clone().multiply(invFlangeLocal);
+            const invSnapLocal = snapLocalMatrix.clone().invert();
+            const newGroupMatrix = targetMatrix.clone().multiply(invSnapLocal);
 
             // 부모 좌표계(Scene) 반영하여 조인트 그룹 위치/회전 적용
             if (sourceGroup.parent) {
@@ -230,11 +218,11 @@ export default function AssemblyViewer({ addedParts, onScoreCalculated }: Assemb
             }
             sourceGroup.matrix.decompose(sourceGroup.position, sourceGroup.quaternion, sourceGroup.scale);
 
-            setConnectionStatus(`🎉 찰칵! 회전과 간격이 맞춰져 완벽하게 조립되었습니다.`);
+            setConnectionStatus(`🎉 찰칵! 접합면이 정확히 일치하여 완벽하게 조립되었습니다.`);
             selectedSourceRef.current = null;
             outlinePass.selectedObjects = [];
           } else {
-            setConnectionStatus(`⚠️ 경고: 먼저 [플렉시블 조인트 플랜지]를 클릭하여 선택해주세요.`);
+            setConnectionStatus(`⚠️ 경고: 먼저 [조인트의 접합면]을 클릭하여 선택해주세요.`);
           }
         }
       }

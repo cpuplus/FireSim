@@ -7,10 +7,6 @@ interface PumpProps {
   pumpType?: string;
 }
 
-/**
- * 정밀 펌프 3D 모델을 생성하여 THREE.Group으로 반환하는 공통 함수
- * - 조립 화면(AssemblyViewer) 및 단독 화면에서 공통으로 호출하여 사용
- */
 export function buildPumpGroup(): THREE.Group {
   const pumpGroup = new THREE.Group();
   pumpGroup.name = "pump-024-45";
@@ -53,42 +49,46 @@ export function buildPumpGroup(): THREE.Group {
     side: THREE.DoubleSide,
   });
 
+  // 스냅 서피스 공통 재질 (반투명 파란색)
+  const snapMat = new THREE.MeshBasicMaterial({
+    color: 0x38bdf8,
+    transparent: true,
+    opacity: 0.0, // 👈 투명도를 0으로 설정
+    depthWrite: false, // 투명 부품 간 렌더링 꼬임 방지
+    side: THREE.DoubleSide,
+  });
+
   // A. 하단 철제 베이스 프레임
   const bedGeo = new THREE.BoxGeometry(720, 20, 320);
   const bed = new THREE.Mesh(bedGeo, baseMat);
-  bed.position.set(0, -35, 0);
+  bed.position.set(0, 10, 0);
   bed.castShadow = true;
   bed.receiveShadow = true;
   pumpGroup.add(bed);
 
   const lipGeo = new THREE.BoxGeometry(730, 8, 330);
   const lip = new THREE.Mesh(lipGeo, baseMat);
-  lip.position.set(0, -22, 0);
+  lip.position.set(0, 23, 0);
   pumpGroup.add(lip);
 
   // B. 모터 본체 (좌측)
   const motorRadius = 82;
-  const motorBodyGeo = new THREE.CylinderGeometry(
-    motorRadius,
-    motorRadius,
-    175,
-    32,
-  );
+  const motorBodyGeo = new THREE.CylinderGeometry(motorRadius, motorRadius, 175, 32);
   const motorBody = new THREE.Mesh(motorBodyGeo, motorBodyMat);
   motorBody.rotation.z = Math.PI / 2;
-  motorBody.position.set(-210, 114, 0);
+  motorBody.position.set(-210, 159, 0);
   motorBody.castShadow = true;
   pumpGroup.add(motorBody);
 
   const motorMountGeo = new THREE.BoxGeometry(130, 57, 110);
   const motorMount = new THREE.Mesh(motorMountGeo, motorBodyMat);
-  motorMount.position.set(-210, 3.5, 0);
+  motorMount.position.set(-210, 48.5, 0);
   motorMount.castShadow = true;
   pumpGroup.add(motorMount);
 
   const motorMountBaseGeo = new THREE.BoxGeometry(160, 6, 140);
   const motorMountBase = new THREE.Mesh(motorMountBaseGeo, motorBodyMat);
-  motorMountBase.position.set(-210, -22, 0);
+  motorMountBase.position.set(-210, 23, 0);
   motorMountBase.castShadow = true;
   pumpGroup.add(motorMountBase);
 
@@ -97,47 +97,40 @@ export function buildPumpGroup(): THREE.Group {
     const angle = (i / finCount) * Math.PI * 2;
     const finHolder = new THREE.Group();
     finHolder.rotation.x = angle;
-    finHolder.position.set(-210, 114, 0);
-    const finGeo = new THREE.BoxGeometry(145, 24, 0.9);
+    finHolder.position.set(-210, 159, 0);
+
+    const finGeo = new THREE.BoxGeometry(145, 24, 5);
     const fin = new THREE.Mesh(finGeo, finMat);
     fin.position.set(0, motorRadius + 12, 0);
     finHolder.add(fin);
     pumpGroup.add(finHolder);
   }
+
   const fanCover = new THREE.Mesh(
     new THREE.CylinderGeometry(75, motorRadius, 45, 32),
-    motorBodyMat,
+    motorBodyMat
   );
   fanCover.rotation.z = Math.PI / 2;
-  fanCover.position.set(-325, 114, 0);
+  fanCover.position.set(-325, 159, 0);
   pumpGroup.add(fanCover);
 
   const terminalBox = new THREE.Mesh(
     new THREE.BoxGeometry(75, 50, 75),
-    motorBodyMat,
+    motorBodyMat
   );
-  terminalBox.position.set(-210, 172, 0);
+  terminalBox.position.set(-210, 217, 0);
   pumpGroup.add(terminalBox);
 
   // C. 커플링 안전 보호 덮개
   const guardGroup = new THREE.Group();
-  guardGroup.position.set(-80, -25, 0);
+  guardGroup.position.set(-80, 20, 0);
   const guardRadius = 65,
     guardLength = 85,
     shaftLocalY = 139;
 
   const archMesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(
-      guardRadius,
-      guardRadius,
-      guardLength,
-      32,
-      1,
-      true,
-      0,
-      Math.PI,
-    ),
-    yellowGuardMat,
+    new THREE.CylinderGeometry(guardRadius, guardRadius, guardLength, 32, 1, true, 0, Math.PI),
+    yellowGuardMat
   );
   archMesh.rotation.z = Math.PI / 2;
   archMesh.position.set(0, shaftLocalY, 0);
@@ -145,14 +138,14 @@ export function buildPumpGroup(): THREE.Group {
 
   const leftWall = new THREE.Mesh(
     new THREE.BoxGeometry(guardLength, shaftLocalY, 3),
-    yellowGuardMat,
+    yellowGuardMat
   );
   leftWall.position.set(0, shaftLocalY / 2, -guardRadius);
   guardGroup.add(leftWall);
 
   const rightWall = new THREE.Mesh(
     new THREE.BoxGeometry(guardLength, shaftLocalY, 3),
-    yellowGuardMat,
+    yellowGuardMat
   );
   rightWall.position.set(0, shaftLocalY / 2, guardRadius);
   guardGroup.add(rightWall);
@@ -161,7 +154,7 @@ export function buildPumpGroup(): THREE.Group {
     const isRight = zPos > 0;
     const flangeWing = new THREE.Mesh(
       new THREE.BoxGeometry(guardLength, 3, 18),
-      yellowGuardMat,
+      yellowGuardMat
     );
     flangeWing.position.set(0, 1.5, isRight ? zPos + 9 : zPos - 9);
     guardGroup.add(flangeWing);
@@ -172,51 +165,52 @@ export function buildPumpGroup(): THREE.Group {
   const voluteGeo = new THREE.CylinderGeometry(90, 90, 160, 32);
   const voluteBody = new THREE.Mesh(voluteGeo, pumpBodyMat);
   voluteBody.rotation.z = Math.PI / 2;
-  voluteBody.position.set(140, 114, 0);
+  voluteBody.position.set(140, 159, 0);
   voluteBody.castShadow = true;
   pumpGroup.add(voluteBody);
 
   const leftProtrusion = new THREE.Mesh(
     new THREE.CylinderGeometry(40, 55, 65, 32),
-    pumpBodyMat,
+    pumpBodyMat
   );
   leftProtrusion.rotation.z = Math.PI / 2;
-  leftProtrusion.position.set(27.5, 114, 0);
+  leftProtrusion.position.set(27.5, 159, 0);
   pumpGroup.add(leftProtrusion);
 
   const leftCap = new THREE.Mesh(
     new THREE.CylinderGeometry(35, 35, 15, 32),
-    pumpBodyMat,
+    pumpBodyMat
   );
   leftCap.rotation.z = Math.PI / 2;
-  leftCap.position.set(-10, 114, 0);
+  leftCap.position.set(-10, 159, 0);
   pumpGroup.add(leftCap);
 
   const rightProtrusion = new THREE.Mesh(
     new THREE.CylinderGeometry(55, 40, 65, 32),
-    pumpBodyMat,
+    pumpBodyMat
   );
   rightProtrusion.rotation.z = Math.PI / 2;
-  rightProtrusion.position.set(252.5, 114, 0);
+  rightProtrusion.position.set(252.5, 159, 0);
   pumpGroup.add(rightProtrusion);
 
   const rightCap = new THREE.Mesh(
     new THREE.CylinderGeometry(35, 35, 15, 32),
-    pumpBodyMat,
+    pumpBodyMat
   );
   rightCap.rotation.z = Math.PI / 2;
-  rightCap.position.set(290, 114, 0);
+  rightCap.position.set(290, 159, 0);
   pumpGroup.add(rightCap);
 
   const shaftGeo = new THREE.CylinderGeometry(18, 18, 380, 24);
   const mainShaft = new THREE.Mesh(shaftGeo, stainlessShaftMat);
   mainShaft.rotation.z = Math.PI / 2;
-  mainShaft.position.set(-15, 114, 0);
+  mainShaft.position.set(-15, 159, 0);
   pumpGroup.add(mainShaft);
 
-  // 플랜지
+  // 플랜지 규격 정의
   const pipeRadius = 20;
   const flangeOuterRadius = 50;
+  const flangeThickness = 12;
   const boltCount = 4;
   const boltCircleRadius = 36;
   const boltHoleRadius = 3.5;
@@ -241,68 +235,77 @@ export function buildPumpGroup(): THREE.Group {
 
   const flangeShape = createFlangeShape();
   const flangeGeometry = new THREE.ExtrudeGeometry(flangeShape, {
-    depth: 12,
+    depth: flangeThickness,
     bevelEnabled: false,
   });
 
-  // 흡입관
+  // 1) 흡입관 및 스냅 서피스 (+Z 방향)
   const suctionPipeLength = 30;
   const suctionX = 80;
+  const suctionZCenter = 95;
 
-  const suctionPipeGeo = new THREE.CylinderGeometry(
-    pipeRadius,
-    pipeRadius,
-    suctionPipeLength,
-    32,
-    1,
-    true,
-  );
+  const suctionPipeGeo = new THREE.CylinderGeometry(pipeRadius, pipeRadius, suctionPipeLength, 32, 1, true);
   const suctionPipe = new THREE.Mesh(suctionPipeGeo, pumpBodyMat);
   suctionPipe.rotation.x = Math.PI / 2;
-  suctionPipe.position.set(suctionX, 114, 95);
+  suctionPipe.position.set(suctionX, 159, suctionZCenter);
   pumpGroup.add(suctionPipe);
 
-  // 💡 흡입구 플랜지 메쉬에 확장성 있는 이름 부여
+  const suctionFlangeZ = suctionZCenter + suctionPipeLength / 2;
   const suctionFlange = new THREE.Mesh(flangeGeometry, pumpBodyMat);
   suctionFlange.name = "flange_suction";
-  suctionFlange.position.set(suctionX, 114, 95 + suctionPipeLength / 2);
+  suctionFlange.position.set(suctionX, 159, suctionFlangeZ);
   pumpGroup.add(suctionFlange);
+
+  // 💡 [수정] 흡입구 스냅 서피스: CircleGeometry를 사용하여 +Z 방향 법선과 일치시킴
+  const suctionSnapSurface = new THREE.Mesh(
+    new THREE.CircleGeometry(flangeOuterRadius - 5, 32),
+    snapMat
+  );
+  suctionSnapSurface.name = "snap_surface_suction";
+  // 기본 CircleGeometry는 Z축 방향을 보므로 회전 불필요 (필요시 뒤집으려면 rotation.y = Math.PI)
+  suctionSnapSurface.rotation.y = Math.PI; // 좌우/앞뒤 반전
+  suctionSnapSurface.position.set(suctionX, 159, suctionFlangeZ + flangeThickness + 0.1);
+  pumpGroup.add(suctionSnapSurface);
 
   const suctionHole = new THREE.Mesh(
     new THREE.CircleGeometry(pipeRadius - 0.5, 32),
-    holeMat,
+    holeMat
   );
-  suctionHole.position.set(suctionX, 114, 80);
+  suctionHole.position.set(suctionX, 159, 80);
   pumpGroup.add(suctionHole);
 
-  // 토출관
-  const dischargePipeGeo = new THREE.CylinderGeometry(
-    pipeRadius,
-    pipeRadius,
-    60,
-    32,
-    1,
-    true,
-  );
+  // 2) 토출관 및 스냅 서피스 (+Y 방향)
+  const dischargePipeY = 243;
+  const dischargePipeGeo = new THREE.CylinderGeometry(pipeRadius, pipeRadius, 60, 32, 1, true);
   const dischargePipe = new THREE.Mesh(dischargePipeGeo, pumpBodyMat);
-  dischargePipe.position.set(190, 198, 0);
+  dischargePipe.position.set(190, dischargePipeY, 0);
   pumpGroup.add(dischargePipe);
 
-  // 💡 토출구 플랜지 메쉬에 확장성 있는 이름 부여
+  const dischargeFlangeY = 273;
   const dischargeFlange = new THREE.Mesh(flangeGeometry, pumpBodyMat);
   dischargeFlange.name = "flange_discharge";
-  dischargeFlange.rotation.x = Math.PI / 2;
-  dischargeFlange.position.set(190, 228, 0);
+  dischargeFlange.rotation.x = Math.PI / 2; // 플랜지가 위를 바라보도록 회전
+  dischargeFlange.position.set(190, dischargeFlangeY, 0);
   pumpGroup.add(dischargeFlange);
+
+  // 💡 [수정] 토출구 스냅 서피스: CircleGeometry를 사용하여 +Y 방향(위쪽) 법선과 정확히 일치시킴
+  const dischargeSnapSurface = new THREE.Mesh(
+    new THREE.CircleGeometry(flangeOuterRadius - 5, 32),
+    snapMat
+  );
+  dischargeSnapSurface.name = "snap_surface_discharge";
+  dischargeSnapSurface.rotation.x = Math.PI / 2; // 면이 정확히 위쪽(+Y)을 바라보도록 회전
+  dischargeSnapSurface.position.set(190, dischargeFlangeY + 0.1, 0);
+  pumpGroup.add(dischargeSnapSurface);
 
   // 다리 및 베이스 발판
   [80, 200].forEach((xPos) => {
     [-1, 1].forEach((dir) => {
       const leg = new THREE.Mesh(
         new THREE.BoxGeometry(24, 115, 16),
-        pumpBodyMat,
+        pumpBodyMat
       );
-      leg.position.set(xPos, 38, dir * 55);
+      leg.position.set(xPos, 83, dir * 55);
       leg.rotation.x = dir * -0.32;
       leg.castShadow = true;
       pumpGroup.add(leg);
@@ -310,9 +313,9 @@ export function buildPumpGroup(): THREE.Group {
 
     const footPlate = new THREE.Mesh(
       new THREE.BoxGeometry(32, 12, 180),
-      pumpBodyMat,
+      pumpBodyMat
     );
-    footPlate.position.set(xPos, -12, 0);
+    footPlate.position.set(xPos, 33, 0);
     footPlate.castShadow = true;
     pumpGroup.add(footPlate);
   });
@@ -330,7 +333,6 @@ export default function Pump_024_45({ pumpType }: PumpProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    // 1. Scene, Camera, Renderer 초기화
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0b0f19);
 
@@ -338,7 +340,7 @@ export default function Pump_024_45({ pumpType }: PumpProps) {
       45,
       container.clientWidth / container.clientHeight,
       0.1,
-      2000,
+      2000
     );
     camera.position.set(450, 250, 450);
 
@@ -353,7 +355,6 @@ export default function Pump_024_45({ pumpType }: PumpProps) {
     controls.dampingFactor = 0.05;
     controls.target.set(0, 40, 0);
 
-    // 2. 조명 설정
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
 
@@ -366,16 +367,13 @@ export default function Pump_024_45({ pumpType }: PumpProps) {
     pointLight.position.set(-200, 300, 200);
     scene.add(pointLight);
 
-    // 바닥 그리드
     const gridHelper = new THREE.GridHelper(1000, 40, 0x38bdf8, 0x1e293b);
-    gridHelper.position.y = -45;
+    gridHelper.position.y = 0;
     scene.add(gridHelper);
 
-    // 3. 공통 함수로 생성한 펌프 그룹 추가
     const pumpGroup = buildPumpGroup();
     scene.add(pumpGroup);
 
-    // 4. 애니메이션 루프
     let animationFrameId: number;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -392,21 +390,17 @@ export default function Pump_024_45({ pumpType }: PumpProps) {
     };
     window.addEventListener("resize", handleResize);
 
-    // 5. Cleanup 구문: WebGL Context Lost 방지를 위한 철저한 자원 해제
     return () => {
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
       controls.dispose();
 
-      // Scene 내 모든 Mesh의 Geometry, Material 메모리 해제
-      scene.traverse((object) => {
+      scene.traverse((object: any) => {
         if (object instanceof THREE.Mesh) {
-          if (object.geometry) {
-            object.geometry.dispose();
-          }
+          if (object.geometry) object.geometry.dispose();
           if (object.material) {
             if (Array.isArray(object.material)) {
-              object.material.forEach((mat) => mat.dispose());
+              object.material.forEach((mat: any) => mat.dispose());
             } else {
               object.material.dispose();
             }
@@ -431,8 +425,7 @@ export default function Pump_024_45({ pumpType }: PumpProps) {
         borderRadius: "12px",
         overflow: "hidden",
         border: "1px solid rgba(56, 189, 248, 0.2)",
-        background:
-          "radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)",
+        background: "radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)",
       }}
     />
   );
