@@ -14,7 +14,7 @@ interface PartContextType {
 const PartContext = createContext<PartContextType | undefined>(undefined);
 
 export const PartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [selectedPartIds, setSelectedPartIds] = useState<string[]>(["pump-024-45"]);
+  const [selectedPartIds, setSelectedPartIds] = useState<string[]>([]);
 
   // 단일 선택 (기존 유지)
   const selectSinglePart = (id: string) => {

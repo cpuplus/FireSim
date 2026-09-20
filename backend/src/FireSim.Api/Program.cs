@@ -8,7 +8,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS 정책 추가
+// CORS 정책 추가 (프론트엔드 포트 허용)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
@@ -17,6 +17,7 @@ builder.Services.AddCors(options =>
                         .AllowAnyMethod());
 });
 
+// 데이터베이스 컨텍스트 설정 (SQL Server 연동)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -29,6 +30,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// CORS 미들웨어 적용 (MapControllers 보다 위에 위치해야 정상 동작합니다)
 app.UseCors("AllowFrontend");
 
 app.UseAuthorization();

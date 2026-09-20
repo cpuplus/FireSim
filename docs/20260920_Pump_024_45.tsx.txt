@@ -1,4 +1,4 @@
-// src/components/parts/Pump_024_45.tsx
+// src/components/parts/Pump_SMT40_2.tsx
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -326,7 +326,7 @@ export function buildPumpGroup(): THREE.Group {
 /**
  * 단독 렌더링용 메인 컴포넌트 (단품 뷰어용)
  */
-export default function Pump_024_45({ pumpType }: PumpProps) {
+export default function Pump_SMT40_2({ pumpType }: PumpProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

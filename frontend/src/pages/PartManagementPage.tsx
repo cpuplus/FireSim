@@ -1,41 +1,16 @@
 // src/pages/PartManagementPage.tsx
-import ComponentList from "../components/ComponentList";
-import Pump_024_45 from "../components/parts/Pump_024_45";
+import CategoryPartList from "../components/CategoryPartList";
 import FlexibleJoint_40A from "../components/parts/FlexibleJoint_40A";
 import { usePartContext } from "../context/PartContext";
 
 export default function PartManagementPage() {
-  // 💡 사용하시는 Context 구조에 맞추어 세터(setter) 함수를 가져옵니다. 
-  // (만약 이름이 다르다면 setSelectedPartIds 부분을 컨텍스트에 맞게 수정해주세요)
   const { selectedPartIds, setSelectedPartIds } = usePartContext();
+  const activePartId = selectedPartIds[0] || "";
 
-  // 현재 선택된 단 1개의 부품 ID
-  const activePartId = selectedPartIds[0] || "pump-024-45";
-
-  // 💡 ComponentList에서 부품을 선택했을 때 실행될 핸들러 함수 추가
+  // CategoryPartList에서 부품을 선택했을 때 실행될 핸들러 함수
   const handleSelect = (partId: string) => {
     if (setSelectedPartIds) {
       setSelectedPartIds([partId]);
-    }
-  };
-
-  // 선택된 ID에 따른 부품 명칭 매핑
-  const getPartName = (id: string) => {
-    switch (id) {
-      case "pump-024-45":
-        return "가압송수장치 (024_45)";
-      case "flexible-joint-40a":
-        return "플렉시블 조인트 (40A)";
-      case "pipe-20a":
-        return "배관 (20A)";
-      case "pipe-25a":
-        return "배관 (25A)";
-      case "pipe-32a":
-        return "배관 (32A)";
-      case "pipe-40a":
-        return "배관 (40A)";
-      default:
-        return "선택된 부품";
     }
   };
 
@@ -49,8 +24,8 @@ export default function PartManagementPage() {
         background: "#0f172a",
       }}
     >
-      {/* 좌측 단일 선택 사이드바 (handleSelect 함수 전달) */}
-      <ComponentList activePartId={activePartId} onSelectPart={handleSelect} />
+      {/* 좌측 단일 선택 사이드바 */}
+      <CategoryPartList activePartId={activePartId} onSelectPart={handleSelect} />
 
       {/* 우측 메인 뷰어 영역 */}
       <div
@@ -80,7 +55,7 @@ export default function PartManagementPage() {
               marginBottom: "4px",
             }}
           >
-            부품 목록 관리 및 상세 뷰어 ({getPartName(activePartId)})
+            부품 목록 관리 및 상세 뷰어 {activePartId ? `(${activePartId})` : ""}
           </div>
           <div style={{ color: "#94a3b8", fontSize: "13px" }}>
             좌측 메뉴에서 부품을 선택하면 실시간 3D 모델을 확인하실 수 있습니다.
@@ -96,12 +71,22 @@ export default function PartManagementPage() {
             borderRadius: "12px",
             border: "1px solid rgba(56, 189, 248, 0.2)",
             overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {activePartId === "flexible-joint-40a" ? (
+          {!activePartId ? (
+            <div style={{ color: "#64748b", fontSize: "15px", textAlign: "center" }}>
+              좌측 메뉴에서 조회할 부품을 선택해주세요.
+            </div>
+          ) : activePartId === "fj-40a" ? (
             <FlexibleJoint_40A />
           ) : (
-            <Pump_024_45 pumpType="0.24-45" />
+            <div style={{ color: "#38bdf8", fontSize: "15px", textAlign: "center" }}>
+              선택한 부품 ID: {activePartId}<br />
+              <span style={{ fontSize: "13px", color: "#94a3b8" }}>(3D 모델 준비 중)</span>
+            </div>
           )}
         </div>
       </div>

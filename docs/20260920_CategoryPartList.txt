@@ -1,4 +1,3 @@
-// src/components/ComponentList.tsx
 import { useState } from "react";
 import { usePartContext } from "../context/PartContext"; // 💡 Context 불러오기
 
@@ -14,11 +13,12 @@ interface MenuCategory {
   items: MenuItem[];
 }
 
-interface ComponentListProps {
+interface CategoryPartListProps {
   activePartId: string;
   onSelectPart: (partId: string) => void;
 }
 
+// 추후 백엔드(ASP.NET Core) API나 DB에서 불러올 수 있도록 분리 가능한 데이터 구조
 const MENU_DATA: MenuCategory[] = [
   {
     id: "cat-pump",
@@ -70,7 +70,7 @@ const MENU_DATA: MenuCategory[] = [
   },
 ];
 
-export default function ComponentList({ activePartId, onSelectPart }: ComponentListProps) {
+export default function CategoryPartList({ activePartId, onSelectPart }: CategoryPartListProps) {
   // 💡 Context에서 다중 추가 함수(addPart) 가져오기
   const { addPart } = usePartContext();
 
@@ -106,8 +106,8 @@ export default function ComponentList({ activePartId, onSelectPart }: ComponentL
         padding: "16px",
         boxSizing: "border-box",
         overflowY: "auto",
-      }}>
-
+      }}
+    >
       {/* 💡 파일명 표기 뱃지 */}
       <div
         style={{
@@ -125,15 +125,16 @@ export default function ComponentList({ activePartId, onSelectPart }: ComponentL
           pointerEvents: "none", // 마우스 클릭이 뒤쪽 캔버스나 버튼으로 통과되도록 설정
         }}
       >
-        ComponentList.tsx
+        CategoryPartList.tsx
       </div>
 
-      {/* 기존 컴포넌트 내부 콘텐츠들... */}
+      {/* 상단 타이틀 영역 */}
       <div
         style={{
           fontSize: "18px",
           fontWeight: "bold",
           marginBottom: "20px",
+          marginTop: "15px", // 뱃지 영역과 겹치지 않도록 살짝 여백 추가
           color: "#38bdf8",
         }}
       >
@@ -224,7 +225,7 @@ export default function ComponentList({ activePartId, onSelectPart }: ComponentL
                                   return (
                                     <div
                                       key={child.id}
-                                      onClick={() => handlePartClick(child.id)} // 💡 addPart가 포함된 핸들러 연결
+                                      onClick={() => handlePartClick(child.id)}
                                       style={{
                                         padding: "6px 10px",
                                         fontSize: "13px",
@@ -249,7 +250,7 @@ export default function ComponentList({ activePartId, onSelectPart }: ComponentL
                           </>
                         ) : (
                           <div
-                            onClick={() => handlePartClick(item.id)} // 💡 addPart가 포함된 핸들러 연결
+                            onClick={() => handlePartClick(item.id)}
                             style={{
                               padding: "8px 12px",
                               fontSize: "14px",
