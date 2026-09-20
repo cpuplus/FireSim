@@ -1,18 +1,86 @@
 // src/pages/PartManagementPage.tsx
+import { useEffect, useState } from "react";
 import CategoryPartList from "../components/CategoryPartList";
-import FlexibleJoint_40A from "../components/parts/FlexibleJoint_40A";
+import FlexibleJointViewer from "../components/parts/FlexibleJointViewer";
 import { usePartContext } from "../context/PartContext";
+
+interface PartDetail {
+  description?: string;
+  Description?: string;
+  DESC?: string;
+  groupName?: string;
+  GroupName?: string;
+  GROUP_NAME?: string;
+  partName?: string;
+  PartName?: string;
+  PART_NAME?: string;
+}
 
 export default function PartManagementPage() {
   const { selectedPartIds, setSelectedPartIds } = usePartContext();
-  const activePartId = selectedPartIds[0] || "";
 
-  // CategoryPartList에서 부품을 선택했을 때 실행될 핸들러 함수
-  const handleSelect = (partId: string) => {
-    if (setSelectedPartIds) {
-      setSelectedPartIds([partId]);
+  // activePartId 추출 로직 간소화
+  const rawActive = selectedPartIds[0];
+  const activePartId =
+    typeof rawActive === "string"
+      ? rawActive
+      : rawActive?.id || rawActive?.partId || "";
+
+  const [partDetail, setPartDetail] = useState<PartDetail | null>(null);
+  const [loadingTitle, setLoadingTitle] = useState(false);
+
+  // activePartId 변경 시 데이터 조회 (AbortController 적용)
+  useEffect(() => {
+    if (!activePartId) {
+      setPartDetail(null);
+      return;
     }
+
+    const controller = new AbortController();
+    setLoadingTitle(true);
+
+    fetch(`http://localhost:5007/api/parts/${activePartId}`, {
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("부품 정보를 불러오지 못했습니다.");
+        return res.json();
+      })
+      .then((data) => {
+        const actualData = Array.isArray(data) ? data[0] : data;
+        setPartDetail(actualData);
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          setPartDetail(null);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoadingTitle(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [activePartId]);
+
+  const handleSelect = (partData: { partId: string }) => {
+    setSelectedPartIds?.([partData.partId]);
   };
+
+  const isFlexibleJoint = activePartId.startsWith("fj-");
+
+  const descriptionText =
+    partDetail?.Description ||
+    partDetail?.description ||
+    partDetail?.DESC ||
+    (activePartId ? "부품 상세 정보" : "부품 목록 관리 및 상세 뷰어");
+
+  const groupName =
+    partDetail?.GroupName || partDetail?.groupName || partDetail?.GROUP_NAME || "";
+
+  const partName =
+    partDetail?.PartName || partDetail?.partName || partDetail?.PART_NAME || activePartId;
 
   return (
     <div
@@ -55,7 +123,18 @@ export default function PartManagementPage() {
               marginBottom: "4px",
             }}
           >
-            부품 목록 관리 및 상세 뷰어 {activePartId ? `(${activePartId})` : ""}
+            {activePartId ? (
+              loadingTitle ? (
+                <span>부품 정보를 불러오는 중입니다...</span>
+              ) : (
+                <span>
+                  {descriptionText}{" "}
+                  {groupName || partName ? `(${groupName} ${partName})` : ""}
+                </span>
+              )
+            ) : (
+              <span>부품 목록 관리 및 상세 뷰어</span>
+            )}
           </div>
           <div style={{ color: "#94a3b8", fontSize: "13px" }}>
             좌측 메뉴에서 부품을 선택하면 실시간 3D 모델을 확인하실 수 있습니다.
@@ -80,12 +159,15 @@ export default function PartManagementPage() {
             <div style={{ color: "#64748b", fontSize: "15px", textAlign: "center" }}>
               좌측 메뉴에서 조회할 부품을 선택해주세요.
             </div>
-          ) : activePartId === "fj-40a" ? (
-            <FlexibleJoint_40A />
+          ) : isFlexibleJoint ? (
+            <FlexibleJointViewer partId={activePartId} orientation="horizontal" />
           ) : (
             <div style={{ color: "#38bdf8", fontSize: "15px", textAlign: "center" }}>
-              선택한 부품 ID: {activePartId}<br />
-              <span style={{ fontSize: "13px", color: "#94a3b8" }}>(3D 모델 준비 중)</span>
+              선택한 부품 ID: {activePartId}
+              <br />
+              <span style={{ fontSize: "13px", color: "#94a3b8" }}>
+                (3D 모델 준비 중)
+              </span>
             </div>
           )}
         </div>

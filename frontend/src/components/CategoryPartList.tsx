@@ -1,10 +1,16 @@
+// src/components/CategoryPartList.tsx
 import { useState, useEffect } from "react";
-import { usePartContext } from "../context/PartContext"; // 💡 Context 불러오기
+import { usePartContext } from "../context/PartContext";
+
+interface PartInfo {
+  id: string;
+  name: string;
+}
 
 interface MenuItem {
   id: string;
   name: string;
-  children?: { id: string; name: string }[];
+  children?: PartInfo[];
 }
 
 interface MenuCategory {
@@ -15,14 +21,17 @@ interface MenuCategory {
 
 interface CategoryPartListProps {
   activePartId: string;
-  onSelectPart: (partId: string) => void;
+  onSelectPart: (partInfo: {
+    partId: string;
+    description: string;
+    groupName: string;
+    partName: string;
+  }) => void;
 }
 
 export default function CategoryPartList({ activePartId, onSelectPart }: CategoryPartListProps) {
-  // 💡 Context에서 다중 추가 함수(addPart) 가져오기
   const { addPart } = usePartContext();
 
-  // 💡 DB에서 불러온 데이터를 담을 상태 (초기값은 빈 배열)
   const [menuData, setMenuData] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -30,17 +39,12 @@ export default function CategoryPartList({ activePartId, onSelectPart }: Categor
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
   const [openSubMenuId, setOpenSubMenuId] = useState<string | null>(null);
 
-  // 💡 컴포넌트 마운트 시 백엔드 DB(API)로부터 메뉴 데이터를 비동기 호출
   useEffect(() => {
     const fetchMenuData = async () => {
       try {
         setLoading(true);
-        // C# 백엔드 API 엔드포인트 주소 (필요에 따라 포트나 경로를 조정하세요)
         const response = await fetch("http://localhost:5007/api/parts/categories");
-        
-        if (!response.ok) {
-          throw new Error(`서버 응답 오류 (Status: ${response.status})`);
-        }
+        if (!response.ok) throw new Error(`서버 응답 오류 (Status: ${response.status})`);
 
         const data: MenuCategory[] = await response.json();
         setMenuData(data);
@@ -64,10 +68,18 @@ export default function CategoryPartList({ activePartId, onSelectPart }: Categor
     setOpenSubMenuId((prev) => (prev === id ? null : id));
   };
 
-  // 💡 부품 클릭 시 누적 추가(addPart)와 기존 선택(onSelectPart)을 함께 처리
-  const handlePartClick = (id: string) => {
-    addPart(id);      // 여러 개가 누적되도록 추가
-    onSelectPart(id); // 기존 선택 상태 동기화
+  const handlePartClick = (part: PartInfo, categoryName: string, parentItemName?: string) => {
+    const groupName = categoryName || "기본 그룹";
+    const partName = parentItemName ? `${parentItemName} ${part.name}` : part.name;
+    const description = `${groupName} - ${partName}`;
+
+    addPart(part.id);
+    onSelectPart({
+      partId: part.id,
+      description,
+      groupName,
+      partName,
+    });
   };
 
   return (
@@ -87,7 +99,6 @@ export default function CategoryPartList({ activePartId, onSelectPart }: Categor
         overflowY: "auto",
       }}
     >
-      {/* 💡 파일명 표기 뱃지 */}
       <div
         style={{
           position: "absolute",
@@ -107,7 +118,6 @@ export default function CategoryPartList({ activePartId, onSelectPart }: Categor
         CategoryPartList.tsx
       </div>
 
-      {/* 상단 타이틀 영역 */}
       <div
         style={{
           fontSize: "18px",
@@ -124,7 +134,6 @@ export default function CategoryPartList({ activePartId, onSelectPart }: Categor
         {loading && <span style={{ fontSize: "12px", color: "#94a3b8" }}>로딩 중...</span>}
       </div>
 
-      {/* 에러 또는 데이터 없을 때 안내 문구 */}
       {errorMsg && (
         <div style={{ padding: "12px", color: "#f87171", fontSize: "13px", textAlign: "center" }}>
           {errorMsg}
@@ -159,9 +168,7 @@ export default function CategoryPartList({ activePartId, onSelectPart }: Categor
                 }}
               >
                 <span>{category.name}</span>
-                <span style={{ fontSize: "12px", color: "#64748b" }}>
-                  {isOpen ? "▲" : "▼"}
-                </span>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>{isOpen ? "▲" : "▼"}</span>
               </div>
 
               {isOpen && (
@@ -177,7 +184,7 @@ export default function CategoryPartList({ activePartId, onSelectPart }: Categor
                   }}
                 >
                   {category.items.map((item) => {
-                    const hasChildren = item.children && item.children.length > 0;
+                    const hasChildren = Boolean(item.children && item.children.length > 0);
                     const isSubOpen = openSubMenuId === item.id;
                     const isSelected = activePartId === item.id;
 
@@ -221,19 +228,15 @@ export default function CategoryPartList({ activePartId, onSelectPart }: Categor
                                   return (
                                     <div
                                       key={child.id}
-                                      onClick={() => handlePartClick(child.id)}
+                                      onClick={() => handlePartClick(child, category.name, item.name)}
                                       style={{
                                         padding: "6px 10px",
                                         fontSize: "13px",
                                         cursor: "pointer",
                                         borderRadius: "4px",
                                         color: isChildSelected ? "#38bdf8" : "#94a3b8",
-                                        backgroundColor: isChildSelected
-                                          ? "#1e293b"
-                                          : "transparent",
-                                        border: isChildSelected
-                                          ? "1px solid #38bdf8"
-                                          : "1px solid transparent",
+                                        backgroundColor: isChildSelected ? "#1e293b" : "transparent",
+                                        border: isChildSelected ? "1px solid #38bdf8" : "1px solid transparent",
                                         fontWeight: isChildSelected ? "bold" : "normal",
                                       }}
                                     >
@@ -246,19 +249,15 @@ export default function CategoryPartList({ activePartId, onSelectPart }: Categor
                           </>
                         ) : (
                           <div
-                            onClick={() => handlePartClick(item.id)}
+                            onClick={() => handlePartClick(item, category.name)}
                             style={{
                               padding: "8px 12px",
                               fontSize: "14px",
                               cursor: "pointer",
                               borderRadius: "6px",
                               color: isSelected ? "#38bdf8" : "#94a3b8",
-                              backgroundColor: isSelected
-                                ? "#1e293b"
-                                : "transparent",
-                              border: isSelected
-                                ? "1px solid #38bdf8"
-                                : "1px solid transparent",
+                              backgroundColor: isSelected ? "#1e293b" : "transparent",
+                              border: isSelected ? "1px solid #38bdf8" : "1px solid transparent",
                               fontWeight: isSelected ? "bold" : "normal",
                             }}
                           >

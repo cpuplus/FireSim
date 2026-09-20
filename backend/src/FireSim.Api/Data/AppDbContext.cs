@@ -15,6 +15,8 @@ namespace FireSim.Api.Data
         public DbSet<InspectionResult> InspectionResults { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Part> Parts { get; set; }
+        public DbSet<FlexibleJointDetail> FlexibleJointDetails { get; set; }
+        public DbSet<PipeDetail> PipeDetails { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -6,10 +6,10 @@ import PartManagementPage from "./pages/PartManagementPage";
 import { PartProvider } from "./context/PartContext";
 
 export default function App() {
-  // 💡 초기값 및 타입을 "assembly"(수계소화설비 시공실무)로 설정하여 첫 실행 시 기본 페이지로 지정
+  
   const [currentTab, setCurrentTab] = useState<
     "assembly" | "main" | "parts"
-  >("assembly");
+  >();    // 기본 페이지로 지정
 
   return (
     <PartProvider>

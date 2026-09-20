@@ -1,0 +1,65 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using FireSim.Api.Data;
+using FireSim.Api.Models;
+
+namespace FireSim.Api.Controllers
+{
+    [Route("api/parts")]
+    [ApiController]
+    public class FlexibleJointController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public FlexibleJointController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet("{partId}")]
+        public async Task<IActionResult> GetFlexibleJointDetail(string partId)
+        {
+            try
+            {
+                var detail = await _context.FlexibleJointDetails
+                    .FirstOrDefaultAsync(x => x.PartId == partId);
+
+                if (detail == null)
+                {
+                    return NotFound(new { message = $"해당 플렉시블 조인트 ID({partId})의 규격 정보를 찾을 수 없습니다." });
+                }
+
+                // 💡 모델에 정의된 실제 속성 이름(PiperDiameter, OuterDiameter 등)과 매핑
+                var responseData = new
+                {
+                    spec = new
+                    {
+                        piperDiameter = detail.PiperDiameter,       // PiperDiameter를 piperDiameter로 매핑
+                        outerDiameter = detail.OuterDiameter,
+                        flangeThickness = detail.FlangeThickness,
+                        pitchCircleDiameter = detail.PitchCircleDiameter,
+                        boltHoleSpec = detail.BoltHoleSpec
+                    },
+                    dimensions = new
+                    {
+                        width = (double)detail.OuterDiameter,
+                        height = (double)detail.OuterDiameter,
+                        depth = detail.Length
+                    }
+                };
+
+                return Ok(responseData);
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "플렉시블 조인트 상세 규격을 조회하는 중 오류가 발생했습니다.",
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message
+                });
+            }
+        }
+    }
+}
