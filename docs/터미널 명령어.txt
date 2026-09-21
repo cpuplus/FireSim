@@ -12,7 +12,7 @@ npm run dev
 3. 원격 저장소에 업로드 (클라우드 백업)
 cd d:\works\firesim\
 git add .
-git commit -m "백업: 
+git commit -m "백업: ?????????????????"
 git push origin main
 
 불필요한 파일정리
