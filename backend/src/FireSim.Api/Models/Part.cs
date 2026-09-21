@@ -7,16 +7,22 @@ namespace FireSim.Api.Models
     public class Part
     {
         [Key]
-        [Column("PartId")]
-        public string? PartId { get; set; }
+        [MaxLength(50)]
+        public string PartId { get; set; } = string.Empty;
 
-        [Column("CategoryId")]
-        public string? CategoryId { get; set; }
+        [MaxLength(50)]
+        public string CategoryId { get; set; } = string.Empty;
 
-        [Column("GroupName")]
-        public string? GroupName { get; set; }
+        [ForeignKey("CategoryId")]
+        public Category? Category { get; set; }
 
-        [Column("PartName")]
-        public string? PartName { get; set; }
+        [MaxLength(100)]
+        public string GroupName { get; set; } = string.Empty;
+
+        [MaxLength(100)]
+        public string PartName { get; set; } = string.Empty;
+
+        [MaxLength(255)]
+        public string? Description { get; set; }
     }
 }

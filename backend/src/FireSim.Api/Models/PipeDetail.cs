@@ -7,12 +7,11 @@ namespace FireSim.Api.Models
     public class PipeDetail
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int PipeSpecId { get; set; }
-
-        [Required]
         [MaxLength(50)]
         public string PartId { get; set; } = string.Empty;
+
+        [ForeignKey("PartId")]
+        public Part? Part { get; set; }
 
         [Column(TypeName = "decimal(5,2)")]
         public decimal OuterDiameter { get; set; }
@@ -21,6 +20,6 @@ namespace FireSim.Api.Models
         public decimal Thickness { get; set; }
 
         [MaxLength(255)]
-        public string? Description { get; set; } // NULL 허용 필드
+        public string? Description { get; set; }
     }
 }

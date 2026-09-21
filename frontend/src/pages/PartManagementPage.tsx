@@ -24,12 +24,12 @@ export default function PartManagementPage() {
   const activePartId =
     typeof rawActive === "string"
       ? rawActive
-      : rawActive?.id || rawActive?.partId || "";
+      : (rawActive as any)?.id || (rawActive as any)?.partId || "";
 
   const [partDetail, setPartDetail] = useState<PartDetail | null>(null);
   const [loadingTitle, setLoadingTitle] = useState(false);
 
-  // activePartId 변경 시 데이터 조회 (AbortController 적용)
+  // activePartId 변경 시 async/await + try...catch 방식으로 데이터 조회
   useEffect(() => {
     if (!activePartId) {
       setPartDetail(null);
@@ -37,29 +37,34 @@ export default function PartManagementPage() {
     }
 
     const controller = new AbortController();
-    setLoadingTitle(true);
 
-    fetch(`http://localhost:5007/api/parts/${activePartId}`, {
-      signal: controller.signal,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("부품 정보를 불러오지 못했습니다.");
-        return res.json();
-      })
-      .then((data) => {
+    const fetchPartDetail = async () => {
+      setLoadingTitle(true);
+
+      try {
+        const res = await fetch(`http://localhost:5007/api/parts/${activePartId}`, {
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          throw new Error("부품 정보를 불러오지 못했습니다.");
+        }
+
+        const data = await res.json();
         const actualData = Array.isArray(data) ? data[0] : data;
         setPartDetail(actualData);
-      })
-      .catch((err) => {
+      } catch (err: any) {
         if (err.name !== "AbortError") {
           setPartDetail(null);
         }
-      })
-      .finally(() => {
+      } finally {
         if (!controller.signal.aborted) {
           setLoadingTitle(false);
         }
-      });
+      }
+    };
+
+    fetchPartDetail();
 
     return () => controller.abort();
   }, [activePartId]);
