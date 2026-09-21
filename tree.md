@@ -19,8 +19,8 @@ D:\work\FireSim — 📁 프로젝트 최상위 루트 디렉터리
 │           │   ├── 📄 FlexibleJointController.cs — 플렉시블 조인트의 치수 정보를 DB에서 찾아 프론트엔드(화면)로 전달해 주는 백엔드 API 창구(Controller)
 │           │   │
 │           │   ├── 📄 PartMenuController.cs — DB에서 부품 데이터를 불러와 프론트엔드용 트리 메뉴 구조로 재구성하고,부품 크기순(수치) 정렬 및 불필요한 중복
-│           │   │                              메뉴를 자동으로 정리하여 화면에 전달해 주는 역할(GET /api/parts/{id}) * 20260921_사용되지 않는 파일
-│           │   └── 📄 PartsController.cs — 프론트엔드 사이드바/메뉴판에 표시할 부품 카테고리 트리 구조 데이터를 DB에서 조회하여 가공·전달
+│           │   │                              메뉴를 자동으로 정리하여 화면에 전달해 주는 역할(GET /api/parts/{id}) *20260921_사용되지 않는 파일
+│           │   └── 📄 PartsController.cs — 물품목록관리 사이드바/메뉴판에 표시할 부품 카테고리 트리 구조 데이터를 DB에서 조회하여 가공·전달
 │           │                                (GET /api/partmenu/categories)
 │           │
 │           ├── 📁 Data — 데이터 흐름 양방향: 프론트엔드 <> 모든 Controller.cs <> AppDbContext.cs <> DB

@@ -32,9 +32,7 @@ if (app.Environment.IsDevelopment())
 
 // CORS 미들웨어 적용 (MapControllers 보다 위에 위치해야 정상 동작합니다)
 app.UseCors("AllowFrontend");
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

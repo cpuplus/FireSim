@@ -1,5 +1,8 @@
+// backend\src\FireSim.Api\Models\FlexibleJointDetail.cs
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace FireSim.Api.Models
 {
@@ -8,9 +11,10 @@ namespace FireSim.Api.Models
     {
         [Key]
         [MaxLength(50)]
-        public string PartId { get; set; } = string.Empty; 
+        public string PartId { get; set; } = string.Empty;
 
         [ForeignKey("PartId")]
+        [JsonIgnore]
         public Part? Part { get; set; }
 
         public int PiperDiameter { get; set; }
@@ -28,8 +32,5 @@ namespace FireSim.Api.Models
 
         [Column(TypeName = "decimal(10,2)")]
         public decimal FlangeThickness { get; set; }
-
-        [MaxLength(255)]
-        public string? Description { get; set; }
     }
 }

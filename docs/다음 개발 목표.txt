@@ -1,6 +1,1 @@
 다음 개발 목표
-방식 1. 백엔드 단일 창구 통합 방식 (가장 추천 👍)
-프론트엔드는 부품 종류가 무엇이든 무조건 GET /api/parts/{partId} 한 개의 API만 호출하고, 백엔드가 부품 ID를 보고 알아서 적절한 데이터(FlexibleJointDetails 또는 PipeDetails)를 찾아 넘겨주는 방식입니다.
-
-
-PartManagementPage 선택 부품 문구 넣기

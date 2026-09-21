@@ -2,34 +2,35 @@
 import { useEffect, useState } from "react";
 import CategoryPartList from "../components/CategoryPartList";
 import FlexibleJointViewer from "../components/parts/FlexibleJointViewer";
+//import PipeViewer from "../components/parts/PipeViewer";
+//import TeeViewer from "../components/parts/TeeViewer";
+//import CrossViewer from "../components/parts/CrossViewer";
 import { usePartContext } from "../context/PartContext";
 
-interface PartDetail {
-  description?: string;
-  Description?: string;
-  DESC?: string;
-  groupName?: string;
-  GroupName?: string;
-  GROUP_NAME?: string;
-  partName?: string;
-  PartName?: string;
-  PART_NAME?: string;
+// 백엔드 PartsController.cs 응답 데이터 규격
+interface PartDetailResponse {
+  partId: string;
+  partName: string;
+  categoryId: string;
+  groupName: string;
+  description: string;
+  detail?: any;
 }
 
 export default function PartManagementPage() {
   const { selectedPartIds, setSelectedPartIds } = usePartContext();
 
-  // activePartId 추출 로직 간소화
+  // activePartId 추출 로직
   const rawActive = selectedPartIds[0];
   const activePartId =
     typeof rawActive === "string"
       ? rawActive
       : (rawActive as any)?.id || (rawActive as any)?.partId || "";
 
-  const [partDetail, setPartDetail] = useState<PartDetail | null>(null);
+  const [partDetail, setPartDetail] = useState<PartDetailResponse | null>(null);
   const [loadingTitle, setLoadingTitle] = useState(false);
 
-  // activePartId 변경 시 async/await + try...catch 방식으로 데이터 조회
+  // activePartId 변경 시 백엔드 단일 창구 API 호출 (/api/parts/{partId})
   useEffect(() => {
     if (!activePartId) {
       setPartDetail(null);
@@ -42,7 +43,8 @@ export default function PartManagementPage() {
       setLoadingTitle(true);
 
       try {
-        const res = await fetch(`http://localhost:5007/api/parts/${activePartId}`, {
+        const res = await fetch(`/api/parts/${activePartId}`, {
+        //const res = await fetch(`http://localhost:5007/api/parts/${activePartId}`, {
           signal: controller.signal,
         });
 
@@ -50,9 +52,8 @@ export default function PartManagementPage() {
           throw new Error("부품 정보를 불러오지 못했습니다.");
         }
 
-        const data = await res.json();
-        const actualData = Array.isArray(data) ? data[0] : data;
-        setPartDetail(actualData);
+        const data: PartDetailResponse = await res.json();
+        setPartDetail(data);
       } catch (err: any) {
         if (err.name !== "AbortError") {
           setPartDetail(null);
@@ -73,19 +74,61 @@ export default function PartManagementPage() {
     setSelectedPartIds?.([partData.partId]);
   };
 
-  const isFlexibleJoint = activePartId.startsWith("fj-");
-
+  // 백엔드 표준 속성에서 값 추출
   const descriptionText =
-    partDetail?.Description ||
     partDetail?.description ||
-    partDetail?.DESC ||
     (activePartId ? "부품 상세 정보" : "부품 목록 관리 및 상세 뷰어");
 
-  const groupName =
-    partDetail?.GroupName || partDetail?.groupName || partDetail?.GROUP_NAME || "";
+  const groupName = partDetail?.groupName || "";
+  const partName = partDetail?.partName || activePartId;
 
-  const partName =
-    partDetail?.PartName || partDetail?.partName || partDetail?.PART_NAME || activePartId;
+  // PartId 접두사에 따라 알맞은 3D 뷰어 컴포넌트를 반환하는 함수
+  const renderViewer = () => {
+    if (!activePartId) {
+      return (
+        <div style={{ color: "#64748b", fontSize: "15px", textAlign: "center" }}>
+          좌측 메뉴에서 조회할 부품을 선택해주세요.
+        </div>
+      );
+    }
+
+    // 1. 플렉시블 조인트 (fj-)
+    if (activePartId.startsWith("fj")) {
+      return (
+      <FlexibleJointViewer 
+        partId={activePartId} 
+        orientation="horizontal" 
+        spec={partDetail?.detail} // 💡 백엔드에서 이미 가져온 detail 치수 객체를 넘겨줌
+    />
+      );
+    }
+
+    // 2. 강관 및 CPVC 배관 (spp-, cpvc-)
+    //if (activePartId.startsWith("spp") || activePartId.startsWith("cpvc")) {
+    //  return <PipeViewer partId={activePartId} />;
+    //}
+
+    // 3. 티 (tee-, tee)
+    //if (activePartId.startsWith("tee")) {
+    // return <TeeViewer partId={activePartId} />;
+    //}
+
+    // 4. 크로스 (cross-, cross)
+    //if (activePartId.startsWith("cross")) {
+    //  return <CrossViewer partId={activePartId} />;
+    //}
+
+    // 5. 기타 준비 중인 3D 모델
+    return (
+      <div style={{ color: "#38bdf8", fontSize: "15px", textAlign: "center" }}>
+        선택한 부품 ID: {activePartId}
+        <br />
+        <span style={{ fontSize: "13px", color: "#94a3b8" }}>
+          (3D 모델 준비 중)
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -160,21 +203,7 @@ export default function PartManagementPage() {
             justifyContent: "center",
           }}
         >
-          {!activePartId ? (
-            <div style={{ color: "#64748b", fontSize: "15px", textAlign: "center" }}>
-              좌측 메뉴에서 조회할 부품을 선택해주세요.
-            </div>
-          ) : isFlexibleJoint ? (
-            <FlexibleJointViewer partId={activePartId} orientation="horizontal" />
-          ) : (
-            <div style={{ color: "#38bdf8", fontSize: "15px", textAlign: "center" }}>
-              선택한 부품 ID: {activePartId}
-              <br />
-              <span style={{ fontSize: "13px", color: "#94a3b8" }}>
-                (3D 모델 준비 중)
-              </span>
-            </div>
-          )}
+          {renderViewer()}
         </div>
       </div>
     </div>

@@ -35,7 +35,8 @@ namespace FireSim.Api.Controllers
                 .ToListAsync() ?? new List<Category>();
 
                 // 2. 전체 부품 데이터를 안전하게 가져옵니다.
-                var rawParts = await _context.Parts.ToListAsync() ?? new List<Part>();
+                var rawParts = await _context.Parts
+                .ToListAsync() ?? new List<Part>();
 
                 // 3. DB 데이터를 프론트엔드가 요구하는 DTO 형태로 매핑 (카테고리 이름을 헬퍼에 함께 전달)
                 var categories = categoriesDb.Select(c => new MenuCategoryDto
@@ -59,7 +60,56 @@ namespace FireSim.Api.Controllers
             }
         }
 
-        // 💡 헬퍼 메서드: CategoryName과 GroupName을 비교하여 중복 그룹 껍데기를 방지하는 로직
+        // 2. 부품 ID 기반 단일 창구 상세 데이터 통합 조회
+        [HttpGet("{partId}")]
+        public async Task<IActionResult> GetPartDetail(string partId)
+        {
+            try
+            {
+                // A. Parts 테이블에서 기본 메타 정보 조회
+                var part = await _context.Parts.FirstOrDefaultAsync(p => p.PartId == partId);
+                if (part == null)
+                {
+                    return NotFound(new { message = $"부품 ID '{partId}'를 찾을 수 없습니다." });
+                }
+
+                // B. PartId 접두사에 따라 알맞은 Detail 정보 조회
+                object? detailData = null;
+
+                if (partId.StartsWith("fj-"))
+                {
+                    detailData = await _context.FlexibleJointDetails
+                        .FirstOrDefaultAsync(d => d.PartId == partId);
+                }
+                else if (partId.StartsWith("spp-") || partId.StartsWith("cpvc-"))
+                {
+                    detailData = await _context.PipeDetails
+                        .FirstOrDefaultAsync(d => d.PartId == partId);
+                }
+
+                // C. 기본 정보 + 상세 치수 스펙을 하나로 묶어서 전달
+                return Ok(new
+                {
+                    partId = part.PartId,
+                    partName = part.PartName,
+                    categoryId = part.CategoryId,
+                    groupName = part.GroupName,
+                    description = part.Description,
+                    detail = detailData
+                });
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "부품 상세 정보 조회 중 오류가 발생했습니다.",
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message
+                });
+            }
+        }
+
+        // 헬퍼 메서드: CategoryName과 GroupName을 비교하여 중복 그룹 껍데기를 방지하는 로직
         private List<MenuItemDto> BuildCategoryItems(List<Part> parts, string categoryName)
         {
             var resultItems = new List<MenuItemDto>();

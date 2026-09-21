@@ -1,58 +1,43 @@
 // src/components/parts/FlexibleJointViewer.tsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 // DB에서 받아오는 규격 스펙 인터페이스
 export interface FlexibleJointSpec {
-  piperDiameter: number;         
-  outerDiameter: number;         
-  flangeThickness: number;     
-  pitchCircleDiameter: number; 
-  boltHoleSpec: string;        
+  piperDiameter?: number; 
+  outerDiameter?: number; 
+  flangeThickness?: number; 
+  pitchCircleDiameter?: number; 
+  boltHoleSpec?: string; 
+  length?: number; // DB 데이터의 length
 }
 
-// 뷰어가 부모로부터 받을 Props (partId만 받음)
+// 뷰어가 부모로부터 받을 Props
 export interface FlexibleJointViewerProps {
-  partId: string;                                     
-  orientation?: "horizontal" | "vertical";    
-  onPartClick?: (partName: string) => void;   
+  partId?: string; 
+  orientation?: "horizontal" | "vertical"; 
+  onPartClick?: (partName: string) => void;
+  spec?: FlexibleJointSpec | null; // 부모(PartManagementPage)로부터 전달받는 스펙 데이터
 }
 
 /**
- * 실제 DB/API로부터 partId에 해당하는 스펙과 치수를 비동기로 가져오는 함수
- */
-async function fetchPartSpecFromDB(partId: string) {
-  try {
-    // 실제 구축되어 있는 백엔드 API로 요청
-    const response = await fetch(`/api/parts/${partId}`);
-    
-    if (!response.ok) {
-      throw new Error(`부품 스펙을 불러오는데 실패했습니다. (상태 코드: ${response.status})`);
-    }
-    
-    const data = await response.json();
-    return data; // 서버에서 { spec: {...}, dimensions: {...} } 형태로 반환된다고 가정
-  } catch (error) {
-    console.error("DB 연동 오류:", error);
-    return null;
-  }
-}
-
-/**
- * 전달받은 스펙과 치수를 바탕으로 플렉시블 조인트 3D 모델을 생성하는 함수
+ * 전달받은 스펙을 바탕으로 플렉시블 조인트 3D 모델을 생성하는 함수
  */
 export function buildFlexibleJointGroup(
-  dbSpec: FlexibleJointSpec,
-  dimensions: { width: number; height: number; depth: number },
+  dbSpec?: FlexibleJointSpec | null,
   orientation: "horizontal" | "vertical" = "horizontal"
 ): THREE.Group {
   const jointGroup = new THREE.Group();
   jointGroup.name = "flexible-joint-dynamic";
 
-  const maxDimension = Math.max(dimensions.width, dimensions.height, dimensions.depth);
-  // 💡 변수명을 length로 변경
-  const length = maxDimension;
+  // 💡 undefined 방지를 위해 DB 데이터 기반 기본값(Fallback) 설정
+  const piperDiameter = dbSpec?.piperDiameter ?? 40;
+  const outerDiameter = dbSpec?.outerDiameter ?? 135;
+  const flangeThickness = dbSpec?.flangeThickness ?? 16;
+  const pitchCircleDiameter = dbSpec?.pitchCircleDiameter ?? 105;
+  const boltHoleSpec = dbSpec?.boltHoleSpec ?? "4-ø19";
+  const length = dbSpec?.length ?? 230;
 
   const flangeMat = new THREE.MeshStandardMaterial({
     color: 0x1e293b,
@@ -81,20 +66,20 @@ export function buildFlexibleJointGroup(
     metalness: 0.1,
   });
 
-  const pipeRadius = dbSpec.piperDiameter / 2;
-  const flangeOuterRadius = dbSpec.outerDiameter / 2;
-  const flangeThickness = dbSpec.flangeThickness;
-  const boltCircleRadius = dbSpec.pitchCircleDiameter / 2;
+  const pipeRadius = piperDiameter / 2;
+  const flangeOuterRadius = outerDiameter / 2;
+  const boltCircleRadius = pitchCircleDiameter / 2;
 
-  const parseBoltSpec = (spec: string) => {
-    const parts = spec.split("-");
+  const parseBoltSpec = (specStr: string) => {
+    if (!specStr) return { count: 4, holeRadius: 4 };
+    const parts = specStr.split("-");
     const count = parseInt(parts[0]) || 4;
     const holeMatch = parts[1] ? parts[1].replace(/[^0-9.]/g, "") : "8";
     const holeRadius = parseFloat(holeMatch) / 2 || 4;
     return { count, holeRadius };
   };
 
-  const { count: boltCount, holeRadius: boltHoleRadius } = parseBoltSpec(dbSpec.boltHoleSpec);
+  const { count: boltCount, holeRadius: boltHoleRadius } = parseBoltSpec(boltHoleSpec);
 
   const createFlangeShape = () => {
     const shape = new THREE.Shape();
@@ -291,29 +276,12 @@ export default function FlexibleJointViewer({
   partId,
   orientation = "horizontal",
   onPartClick,
+  spec,
 }: FlexibleJointViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [loading, setLoading] = useState(true);
-  const [partData, setPartData] = useState<any>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-
-    fetchPartSpecFromDB(partId).then((data) => {
-      if (isMounted) {
-        setPartData(data);
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [partId]);
-
-  useEffect(() => {
-    if (loading || !partData || !containerRef.current) return;
+    if (!containerRef.current) return;
     const container = containerRef.current;
 
     const scene = new THREE.Scene();
@@ -345,8 +313,8 @@ export default function FlexibleJointViewer({
     gridHelper.position.y = -90;
     scene.add(gridHelper);
 
-    // partData 내부의 spec과 dimensions를 가져와서 3D 모델 생성
-    const jointGroup = buildFlexibleJointGroup(partData.spec, partData.dimensions, orientation);
+    // 💡 부모로부터 받아서 전달된 spec 데이터를 직접 사용하여 3D 생성
+    const jointGroup = buildFlexibleJointGroup(spec, orientation);
     scene.add(jointGroup);
 
     const raycaster = new THREE.Raycaster();
@@ -394,21 +362,11 @@ export default function FlexibleJointViewer({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [loading, partData, orientation, onPartClick]);
+  }, [spec, orientation, onPartClick]);
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
-      {loading ? (
-        <div style={{ color: "#38bdf8", display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-          DB에서 부품 스펙을 불러오는 중...
-        </div>
-      ) : !partData ? (
-        <div style={{ color: "#ef4444", display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-          해당 부품의 규격 정보를 찾을 수 없습니다. ({partId})
-        </div>
-      ) : (
-        <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
-      )}
+      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 }

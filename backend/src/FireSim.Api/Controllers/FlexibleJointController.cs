@@ -8,7 +8,7 @@ using FireSim.Api.Models;
 
 namespace FireSim.Api.Controllers
 {
-    [Route("api/parts")]
+    [Route("api/flexible-joints")]
     [ApiController]
     public class FlexibleJointController : ControllerBase
     {

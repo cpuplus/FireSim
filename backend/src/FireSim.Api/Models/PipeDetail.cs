@@ -18,8 +18,5 @@ namespace FireSim.Api.Models
 
         [Column(TypeName = "decimal(5,2)")]
         public decimal Thickness { get; set; }
-
-        [MaxLength(255)]
-        public string? Description { get; set; }
     }
 }
