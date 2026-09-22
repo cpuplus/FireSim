@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import CategoryPartList from "../components/CategoryPartList";
 import FlexibleJointViewer from "../components/parts/FlexibleJointViewer";
+import Pump_SMT50_3 from "../components/parts/Pump_SMT50_3";
+//import Pump_dy from "../components/parts/Pump_dy";
 //import PipeViewer from "../components/parts/PipeViewer";
 //import TeeViewer from "../components/parts/TeeViewer";
 //import CrossViewer from "../components/parts/CrossViewer";
@@ -19,6 +21,17 @@ interface PartDetailResponse {
 
 export default function PartManagementPage() {
   const { selectedPartIds, setSelectedPartIds } = usePartContext();
+
+  // 💡 1. 페이지 진입(Mount) 및 이탈(Unmount) 시 전역 선택 상태 리셋
+  useEffect(() => {
+    // 페이지 진입 시 초기화
+    setSelectedPartIds?.([]);
+
+    return () => {
+      // 다른 페이지로 이동(언마운트) 시 초기화
+      setSelectedPartIds?.([]);
+    };
+  }, []);
 
   // activePartId 추출 로직
   const rawActive = selectedPartIds[0];
@@ -44,7 +57,6 @@ export default function PartManagementPage() {
 
       try {
         const res = await fetch(`/api/parts/${activePartId}`, {
-        //const res = await fetch(`http://localhost:5007/api/parts/${activePartId}`, {
           signal: controller.signal,
         });
 
@@ -95,30 +107,26 @@ export default function PartManagementPage() {
     // 1. 플렉시블 조인트 (fj-)
     if (activePartId.startsWith("fj")) {
       return (
-      <FlexibleJointViewer 
-        partId={activePartId} 
-        orientation="horizontal" 
-        spec={partDetail?.detail} // 💡 백엔드에서 이미 가져온 detail 치수 객체를 넘겨줌
-    />
+        <FlexibleJointViewer
+          key={activePartId} // 💡 key를 부여하여 ID 변경/초기화 시 캔버스 완전 재초기화
+          partId={activePartId}
+          orientation="horizontal"
+          spec={partDetail?.detail}
+        />
       );
     }
 
-    // 2. 강관 및 CPVC 배관 (spp-, cpvc-)
-    //if (activePartId.startsWith("spp") || activePartId.startsWith("cpvc")) {
-    //  return <PipeViewer partId={activePartId} />;
-    //}
+    // 2. Pump_SMT50_3 컴포넌트 렌더링
+    if (activePartId === "spk-smt50-3" || activePartId.startsWith("spk")) {
+      return <Pump_SMT50_3 key={activePartId} />;
+    }
 
-    // 3. 티 (tee-, tee)
-    //if (activePartId.startsWith("tee")) {
-    // return <TeeViewer partId={activePartId} />;
-    //}
+    // 3. 입형 다단 펌프 (dy 또는 dy-) -> Pump_dy 직접 렌더링 💡
+    if (activePartId === "dy") {
+      //return <Pump_dy key={activePartId} />;
+    }
 
-    // 4. 크로스 (cross-, cross)
-    //if (activePartId.startsWith("cross")) {
-    //  return <CrossViewer partId={activePartId} />;
-    //}
-
-    // 5. 기타 준비 중인 3D 모델
+    // 2. 기타 준비 중인 3D 모델
     return (
       <div style={{ color: "#38bdf8", fontSize: "15px", textAlign: "center" }}>
         선택한 부품 ID: {activePartId}

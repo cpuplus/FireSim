@@ -6,7 +6,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-import { buildPumpGroup } from "./parts/Pump_SMT40_2";
+import { buildPumpGroup } from "./parts/Pump_SMT50_3";
 import { buildFlexibleJointGroup } from "./parts/FlexibleJoint_40A";
 import FlexibleJointViewer from "../components/parts/FlexibleJointViewer";
 import { useAssemblyStore } from "../store/useAssemblyStore";

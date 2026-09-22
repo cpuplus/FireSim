@@ -40,11 +40,16 @@ D:\work\FireSim — 📁 프로젝트 최상위 루트 디렉터리
 │   └── 📁 src — 프론트엔드 소스 코드 모음 폴더
 │       │
 │       ├── 📁 components — UI 재사용 가능 컴포넌트 폴더
-│       │   └── 📁 parts — 부품 시각화 및 관리 전용 컴포넌트 모음
-│       │       ├── 📄 AssemblyViewer.tsx — 부품 조립 상태 시각화/조회 뷰어 컴포넌트
-│       │       ├── 📄 CategoryPartList.tsx — 카테고리별 부품 목록 조회/선택 리스트 컴포넌트
-│       │       ├── 📄 FireSimViewer.tsx — 소방 시뮬레이션 메인 3D/2D 뷰어 컴포넌트
-│       │       └── 📄 InspectionPanel.tsx — 선택한 부품의 상세 규격 및 점검 정보 패널 컴포넌트
+│       │   ├── 📁 parts — 부품 시각화 및 관리 전용 컴포넌트 모음
+│       │   │   ├── 📄 FlexibleJoint_40A.tsx — 사용 안되는 예전 파일
+│       │   │   ├── 📄 FlexibleJointViewer.tsx — 백엔드 DB에서 전달받은 치수 스펙을 기반으로 3D 모델을 생성하고 화면에 보여주는 전용 3D 뷰어 컴포넌트
+│       │   │   ├── 📄 Pump_SMT50_3.tsx — SMT50_3 펌프 치수 하드 코딩
+│       │   │   └── 📄
+│       │   │
+│       │   ├── 📄 AssemblyViewer.tsx — 부품 조립 상태 시각화/조회 뷰어 컴포넌트
+│       │   ├── 📄 CategoryPartList.tsx — 카테고리별 부품 목록 조회/선택 리스트 컴포넌트
+│       │   ├── 📄 FireSimViewer.tsx — 소방 시뮬레이션 메인 3D/2D 뷰어 컴포넌트
+│       │   └── 📄 InspectionPanel.tsx — 선택한 부품의 상세 규격 및 점검 정보 패널 컴포넌트
 │       │
 │       ├── 📁 context — React 전역 상태 관리 폴더
 │       │   └── 📄 PartContext.tsx — 애플리케이션 전체에서 부품 선택/조회 상태를 공유하는 Context Provider

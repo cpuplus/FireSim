@@ -1,8 +1,22 @@
 {
-    "files.exclude": {
+  "files.exclude": {
     "**/docs": true,
     "**/images": true,
     "**/simulation": true,
     "**/tests": true
+  },
+
+  // 파일 저장 시 자동 포맷팅 실행
+  "editor.formatOnSave": true,
+
+  // JavaScript/TypeScript 파일 기본 포맷터 지정
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }
