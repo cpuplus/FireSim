@@ -1,0 +1,65 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using FireSim.Api.Data;
+
+namespace FireSim.Api.Controllers
+{
+    [Route("api/slipon-flanges")]
+    [ApiController]
+    public class SliponFlangeController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public SliponFlangeController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet("{partId}")]
+        public async Task<IActionResult> GetSliponFlangeDetail(string partId)
+        {
+            try
+            {
+                var detail = await _context.SliponFlangeDetails
+                    .FirstOrDefaultAsync(x => x.PartId == partId);
+
+                if (detail == null)
+                {
+                    return NotFound(new { message = $"해당 슬립온 플랜지 ID({partId})의 규격 정보를 찾을 수 없습니다." });
+                }
+
+                var responseData = new
+                {
+                    spec = new
+                    {
+                        InnerDiameter = detail.InnerDiameter,
+                        OuterDiameter = detail.OuterDiameter,
+                        Thickness = detail.Thickness,
+                        PitchCircleDiameter = detail.PitchCircleDiameter,
+                        numberOfHoles = detail.NumberOfHoles,
+                        HoleDiameter = detail.HoleDiameter,
+                        nominalBoltSize = detail.NominalBoltSize
+                    },
+                    dimensions = new
+                    {
+                        //width = (double)detail.OuterDiameter,
+                        //height = (double)detail.OuterDiameter,
+                        //depth = (double)detail.Thickness
+                    }
+                };
+
+                return Ok(responseData);
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "슬립온 플랜지 상세 규격을 조회하는 중 오류가 발생했습니다.",
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message
+                });
+            }
+        }
+    }
+}

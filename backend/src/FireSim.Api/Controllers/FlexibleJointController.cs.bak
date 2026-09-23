@@ -45,9 +45,9 @@ namespace FireSim.Api.Controllers
                     },
                     dimensions = new
                     {
-                        width = (double)detail.OuterDiameter,
-                        height = (double)detail.OuterDiameter,
-                        depth = detail.Length
+                        //width = (double)detail.OuterDiameter,
+                        //height = (double)detail.OuterDiameter,
+                        //depth = detail.Length
                     }
                 };
 

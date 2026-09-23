@@ -1,5 +1,5 @@
 // src/components/parts/Pump_SMT50_3.tsx
-// 펌프 SPK-SMT50-3-3.7 사양
+// 펌프 pp-spk-smt50-3-3.7 사양
 // 제조사 : SPK
 // 종류 : 다단 터빈 펌프
 // 모델명 : SMT 50

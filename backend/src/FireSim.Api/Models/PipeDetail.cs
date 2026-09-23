@@ -10,8 +10,8 @@ namespace FireSim.Api.Models
         [MaxLength(50)]
         public string PartId { get; set; } = string.Empty;
 
-        [ForeignKey("PartId")]
-        public Part? Part { get; set; }
+        //[ForeignKey("PartId")]
+        //public Part? Part { get; set; }
 
         [Column(TypeName = "decimal(5,2)")]
         public decimal OuterDiameter { get; set; }

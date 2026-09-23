@@ -1,0 +1,60 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using FireSim.Api.Data;
+
+namespace FireSim.Api.Controllers
+{
+    [Route("api/pipes")]
+    [ApiController]
+    public class PipesController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public PipesController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet("{partId}")]
+        public async Task<IActionResult> GetPipeDetail(string partId)
+        {
+            try
+            {
+                var detail = await _context.PipeDetails
+                    .FirstOrDefaultAsync(x => x.PartId == partId);
+
+                if (detail == null)
+                {
+                    return NotFound(new { message = $"해당 파이프 ID({partId})의 규격 정보를 찾을 수 없습니다." });
+                }
+
+                var responseData = new
+                {
+                    spec = new
+                    {
+                        outerDiameter = detail.OuterDiameter,
+                        thickness = detail.Thickness
+                    },
+                    //dimensions = new
+                    //{
+                        //width = (double)detail.OuterDiameter,
+                        //height = (double)detail.OuterDiameter,
+                        //depth = 300.0 // 기본 길이
+                    //}
+                };
+
+                return Ok(responseData);
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "파이프 상세 규격을 조회하는 중 오류가 발생했습니다.",
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message
+                });
+            }
+        }
+    }
+}

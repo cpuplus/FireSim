@@ -1,0 +1,65 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using FireSim.Api.Data;
+using FireSim.Api.Models;
+
+namespace FireSim.Api.Controllers
+{
+    [Route("api/crosses")]
+    [ApiController]
+    public class CrossController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public CrossController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // 특정 PartId에 대한 크로스 상세 정보 및 메타 정보 통합 조회
+        [HttpGet("{partId}")]
+        public async Task<IActionResult> GetCrossDetail(string partId)
+        {
+            try
+            {
+                var detail = await _context.CrossDetails
+                    .FirstOrDefaultAsync(x => x.PartId == partId);
+
+                if (detail == null)
+                {
+                    return NotFound(new { message = $"해당 크로스 ID({partId})의 규격 정보를 찾을 수 없습니다." });
+                }
+
+                var responseData = new
+                {
+                    spec = new
+                    {
+                        nominalSizeMain = detail.NominalSizeMain,
+                        nominalSizeCross = detail.NominalSizeCross,
+                        outerDiameterMain = detail.OuterDiameterMain,
+                        outerDiameterCross = detail.OuterDiameterCross,
+                        thickness = detail.Thickness
+                    },
+                    //dimensions = new
+                    //{
+                        //width = (double)detail.OuterDiameter,
+                        //height = (double)detail.OuterDiameter,
+                        //depth = 300.0 // 기본 길이
+                    //}
+                };
+
+                return Ok(responseData);
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "크로스 상세 정보 조회 중 오류가 발생했습니다.",
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message
+                });
+            }
+        }
+    }
+}

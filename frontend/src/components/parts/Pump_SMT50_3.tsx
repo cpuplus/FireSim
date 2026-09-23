@@ -1,4 +1,14 @@
 // src/components/parts/Pump_SMT50_3.tsx
+// 펌프 pp-spk-smt50-3-3.7 사양
+// 제조사 : SPK
+// 종류 : 다단 터빈 펌프
+// 모델명 : SMT 50
+// 정격 유량 : 350L/min
+// 최대 양정 : 35m
+// 흡입 구경 : 65mm
+// 토출 구경 : 50mm
+// 펌프 단수 : 3단
+// 펌프 동력 : 3.7kW
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -92,7 +102,7 @@ const PUMP_SPEC = {
   },
   DISCHARGE: {
     PIPE_RADIUS: 20,
-    FLANGE_OUTER_RADIUS: 135 / 2,
+    FLANGE_OUTER_RADIUS: 140 / 2,
     BOLT_CIRCLE_RADIUS: 105 / 2,
     PIPE_OFFSET_Y: 100,
     FLANGE_OFFSET_Y: 140,
@@ -390,7 +400,7 @@ export function buildPumpGroup(): THREE.Group {
     motorBodyMat,
   );
   motorFlange.rotation.z = Math.PI / 2;
-  motorFlange.position.set(gapCenter - 18, 0, 0);
+  motorFlange.position.set(gapCenter - 15, 0, 0);
   couplingGroup.add(motorFlange);
 
   const pumpFlange = new THREE.Mesh(
@@ -398,19 +408,19 @@ export function buildPumpGroup(): THREE.Group {
     pumpBodyMat,
   );
   pumpFlange.rotation.z = Math.PI / 2;
-  pumpFlange.position.set(gapCenter + 14, 0, 0);
+  pumpFlange.position.set(gapCenter + 15, 0, 0);
   couplingGroup.add(pumpFlange);
 
   for (let i = 0; i < 8; i++) {
     const angle = (i / 8) * Math.PI * 2;
     const boltRadius = 38;
     const bolt = new THREE.Mesh(
-      new THREE.CylinderGeometry(6, 6, 62, 12),
+      new THREE.CylinderGeometry(6, 6, 70, 12),
       boltMat,
     );
     bolt.rotation.z = Math.PI / 2;
     bolt.position.set(
-      gapCenter + 3,
+      gapCenter,
       Math.sin(angle) * boltRadius,
       Math.cos(angle) * boltRadius,
     );
@@ -685,6 +695,11 @@ export default function Pump_SMT50_3({ pumpType }: PumpProps) {
     const container = containerRef.current;
     if (!container) return;
 
+    // 💡 1. 캔버스 중복 생성 방지: 마운트 시 기존 DOM 자식(이전 캔버스) 강제 청소
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0b0f19);
 
@@ -694,7 +709,7 @@ export default function Pump_SMT50_3({ pumpType }: PumpProps) {
       0.1,
       2000,
     );
-    camera.position.set(500, 300, 500);
+    camera.position.set(800, 500, 800);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -705,7 +720,7 @@ export default function Pump_SMT50_3({ pumpType }: PumpProps) {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.target.set(-15, MOTOR_SPEC.INSTALL_Y, 0);
+    controls.target.set(-15, MOTOR_SPEC.INSTALL_Y - 90, 0);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
@@ -742,14 +757,18 @@ export default function Pump_SMT50_3({ pumpType }: PumpProps) {
     };
     window.addEventListener("resize", handleResize);
 
+    // 💡 2. 언마운트(클린업) 시 메모리 누수 방지 및 WebGL 컨텍스트 완벽 해제
     return () => {
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
       controls.dispose();
 
+      // 씬 내부 순회를 통한 Geometry 및 Material 해제 (단일/배열 머티리얼 모두 대응)
       scene.traverse((object: THREE.Object3D) => {
         if (object instanceof THREE.Mesh) {
-          if (object.geometry) object.geometry.dispose();
+          if (object.geometry) {
+            object.geometry.dispose();
+          }
           if (object.material) {
             if (Array.isArray(object.material)) {
               object.material.forEach((mat: any) => mat.dispose());
@@ -760,10 +779,11 @@ export default function Pump_SMT50_3({ pumpType }: PumpProps) {
         }
       });
 
+      renderer.dispose();
+
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
-      renderer.dispose();
     };
   }, [pumpType]);
 

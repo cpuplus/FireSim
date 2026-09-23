@@ -1,5 +1,3 @@
-// backend\src\FireSim.Api\Controllers\PartsController.cs
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -8,6 +6,7 @@ using System.Threading.Tasks;
 using FireSim.Api.Data;
 using FireSim.Api.Models;
 using System.Text.RegularExpressions;
+using System.Diagnostics.Eventing.Reader;
 
 namespace FireSim.Api.Controllers
 {
@@ -34,8 +33,9 @@ namespace FireSim.Api.Controllers
                 .OrderBy(c => c.CategoryName) // 가나다순(오름차순) 정렬
                 .ToListAsync() ?? new List<Category>();
 
-                // 2. 전체 부품 데이터를 안전하게 가져옵니다.
+                // 2. 전체 부품 데이터 중 useYn이 'Y'인 항목들만 안전하게 가져옵니다.
                 var rawParts = await _context.Parts
+                .Where(p => p.UseYn == "Y")
                 .ToListAsync() ?? new List<Part>();
 
                 // 3. DB 데이터를 프론트엔드가 요구하는 DTO 형태로 매핑 (카테고리 이름을 헬퍼에 함께 전달)
@@ -76,7 +76,12 @@ namespace FireSim.Api.Controllers
                 // B. PartId 접두사에 따라 알맞은 Detail 정보 조회
                 object? detailData = null;
 
-                if (partId.StartsWith("fj-"))
+                if (partId.StartsWith("cross-"))
+                {
+                    detailData = await _context.CrossDetails
+                        .FirstOrDefaultAsync(d => d.PartId == partId);
+                }
+                else if (partId.StartsWith("fj-"))
                 {
                     detailData = await _context.FlexibleJointDetails
                         .FirstOrDefaultAsync(d => d.PartId == partId);
@@ -86,6 +91,12 @@ namespace FireSim.Api.Controllers
                     detailData = await _context.PipeDetails
                         .FirstOrDefaultAsync(d => d.PartId == partId);
                 }
+                else if (partId.StartsWith("sop-"))
+                {
+                    detailData = await _context.SliponFlangeDetails
+                        .FirstOrDefaultAsync(d => d.PartId == partId);
+                }
+                
 
                 // C. 기본 정보 + 상세 치수 스펙을 하나로 묶어서 전달
                 return Ok(new
@@ -109,12 +120,12 @@ namespace FireSim.Api.Controllers
             }
         }
 
-        // 헬퍼 메서드: CategoryName과 GroupName을 비교하여 중복 그룹 껍데기를 방지하는 로직
+        // 헬퍼 메서드: CategoryName과 GroupName을 비교하여 중복 그룹 껍데기를 방지하고, 그룹 구조를 유지하는 로직
         private List<MenuItemDto> BuildCategoryItems(List<Part> parts, string categoryName)
         {
             var resultItems = new List<MenuItemDto>();
 
-            // A. GroupName이 없는 독립형 부품들 (예: 엘보, 티, 크로스 등)
+            // A. GroupName이 없는 독립형 부품들
             var standaloneParts = parts.Where(p => string.IsNullOrEmpty(p.GroupName))
                                        .OrderBy(p => p.PartName)
                                        .ToList();
@@ -131,8 +142,8 @@ namespace FireSim.Api.Controllers
 
             // B. GroupName이 있는 그룹형 부품들
             var groupedParts = parts.Where(p => !string.IsNullOrEmpty(p.GroupName))
-                                     .GroupBy(p => p.GroupName)
-                                     .ToList();
+                                   .GroupBy(p => p.GroupName)
+                                   .ToList();
 
             foreach (var group in groupedParts)
             {
@@ -150,8 +161,7 @@ namespace FireSim.Api.Controllers
                     Name = child.PartName ?? string.Empty
                 }).ToList();
 
-                // 💡 핵심 수정: 그룹 이름(group.Key)이 대분류 카테고리 이름(categoryName)과 같다면
-                // 의미 없는 중복 상위 그룹 껍데기를 만들지 않고, 그 자식 항목들을 바로 최상위 목록으로 풀어버립니다.
+                // 그룹 이름(group.Key)이 대분류 카테고리 이름(categoryName)과 같다면 껍데기 생략
                 if (group.Key == categoryName)
                 {
                     foreach (var child in sortedChildren)
@@ -164,20 +174,9 @@ namespace FireSim.Api.Controllers
                         });
                     }
                 }
-                // C. 하위 메뉴가 1개뿐인 경우: 단독 메뉴로 처리
-                else if (sortedChildren.Count == 1)
-                {
-                    var singleChild = sortedChildren.First();
-                    resultItems.Add(new MenuItemDto
-                    {
-                        Id = singleChild.Id,
-                        Name = singleChild.Name,
-                        Children = new List<MenuItemDto>()
-                    });
-                }
                 else
                 {
-                    // D. 일반적인 그룹 구조 (예: 파이프 -> 100A, 125A 등)
+                    // D. 하위 개수(1개 포함)와 상관없이 그룹명(GroupName)이 존재하면 무조건 그룹 구조로 생성
                     resultItems.Add(new MenuItemDto
                     {
                         Id = $"group-{group.Key}",

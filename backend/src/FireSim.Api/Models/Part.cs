@@ -24,5 +24,8 @@ namespace FireSim.Api.Models
 
         [MaxLength(255)]
         public string? Description { get; set; }
+
+        [MaxLength(1)]
+        public string UseYn { get; set; } = "N";
     }
 }

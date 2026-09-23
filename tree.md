@@ -18,15 +18,15 @@ D:\work\FireSim — 📁 프로젝트 최상위 루트 디렉터리
 │           │   │                 데이터가 없거나 요청이 잘못되었을 때 안내 메시지와 에러 코드 처리
 │           │   ├── 📄 FlexibleJointController.cs — 플렉시블 조인트의 치수 정보를 DB에서 찾아 프론트엔드(화면)로 전달해 주는 백엔드 API 창구(Controller)
 │           │   │
-│           │   ├── 📄 PartMenuController.cs — DB에서 부품 데이터를 불러와 프론트엔드용 트리 메뉴 구조로 재구성하고,부품 크기순(수치) 정렬 및 불필요한 중복
-│           │   │                              메뉴를 자동으로 정리하여 화면에 전달해 주는 역할(GET /api/parts/{id}) *20260921_사용되지 않는 파일
+│           │   ├── 📄 PartMenuController.cs — *20260921_사용되지 않는 파일, DB에서 부품 데이터를 불러와 프론트엔드용 트리 메뉴 구조로 재구성하고,부품
+│           │   │                              크기순(수치) 정렬 및 불필요한 중복 메뉴를 자동으로 정리하여 화면에 전달해 주는 역할(GET /api/parts/{id})
 │           │   └── 📄 PartsController.cs — 물품목록관리 사이드바/메뉴판에 표시할 부품 카테고리 트리 구조 데이터를 DB에서 조회하여 가공·전달
 │           │                                (GET /api/partmenu/categories)
 │           │
 │           ├── 📁 Data — 데이터 흐름 양방향: 프론트엔드 <> 모든 Controller.cs <> AppDbContext.cs <> DB
 │           │   └── 📄 AppDbContext.cs — C# 백엔드 코드와 실제 데이터베이스(SQL DB)를 1:1로 연결하고 관리
 │           │
-│           └── 📁 Models — 데이터베이스 테이블 매핑(EF Core Entity) 및 DTO 모델 폴더
+│           └── 📁 Models — 백앤드에게 DB에 어떤 테이블과 필드가 있는지 알려주는 파일을 모아둔 곳, Controllers에서 데이터 가져올때 여기 보고 찾아간다.
 │               ├── 📄 Category.cs — DB [Categories] 테이블 엔티티 (부품 대분류)
 │               ├── 📄 CategoryModel.cs — 카테고리 데이터 전달용 DTO 또는 화면용 모델
 │               ├── 📄 FlexibleJointDetail.cs — DB [FlexibleJointDetails] 테이블 엔티티 (플렉시블 조인트 상세 스펙)

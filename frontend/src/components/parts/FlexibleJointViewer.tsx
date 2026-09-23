@@ -5,20 +5,20 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 // DB에서 받아오는 규격 스펙 인터페이스
 export interface FlexibleJointSpec {
-  piperDiameter?: number; 
-  outerDiameter?: number; 
-  flangeThickness?: number; 
-  pitchCircleDiameter?: number; 
-  boltHoleSpec?: string; 
-  length?: number; // DB 데이터의 length
+  piperDiameter?: number;
+  outerDiameter?: number;
+  flangeThickness?: number;
+  pitchCircleDiameter?: number;
+  boltHoleSpec?: string;
+  length?: number;
 }
 
 // 뷰어가 부모로부터 받을 Props
 export interface FlexibleJointViewerProps {
-  partId?: string; 
-  orientation?: "horizontal" | "vertical"; 
+  partId?: string;
+  orientation?: "horizontal" | "vertical";
   onPartClick?: (partName: string) => void;
-  spec?: FlexibleJointSpec | null; // 부모(PartManagementPage)로부터 전달받는 스펙 데이터
+  spec?: FlexibleJointSpec | null;
 }
 
 /**
@@ -26,12 +26,11 @@ export interface FlexibleJointViewerProps {
  */
 export function buildFlexibleJointGroup(
   dbSpec?: FlexibleJointSpec | null,
-  orientation: "horizontal" | "vertical" = "horizontal"
+  orientation: "horizontal" | "vertical" = "horizontal",
 ): THREE.Group {
   const jointGroup = new THREE.Group();
   jointGroup.name = "flexible-joint-dynamic";
 
-  // 💡 undefined 방지를 위해 DB 데이터 기반 기본값(Fallback) 설정
   const piperDiameter = dbSpec?.piperDiameter ?? 40;
   const outerDiameter = dbSpec?.outerDiameter ?? 135;
   const flangeThickness = dbSpec?.flangeThickness ?? 16;
@@ -79,7 +78,8 @@ export function buildFlexibleJointGroup(
     return { count, holeRadius };
   };
 
-  const { count: boltCount, holeRadius: boltHoleRadius } = parseBoltSpec(boltHoleSpec);
+  const { count: boltCount, holeRadius: boltHoleRadius } =
+    parseBoltSpec(boltHoleSpec);
 
   const createFlangeShape = () => {
     const shape = new THREE.Shape();
@@ -110,7 +110,7 @@ export function buildFlexibleJointGroup(
   };
   const flangeGeometry = new THREE.ExtrudeGeometry(
     createFlangeShape(),
-    flangeExtrudeSettings
+    flangeExtrudeSettings,
   );
   flangeGeometry.center();
 
@@ -139,9 +139,11 @@ export function buildFlexibleJointGroup(
 
   const firstSnapSurface = new THREE.Mesh(
     new THREE.CircleGeometry(flangeOuterRadius - 5, 32),
-    snapMat
+    snapMat,
   );
-  firstSnapSurface.name = isVertical ? "스냅 서피스 (하단)" : "스냅 서피스 (좌측)";
+  firstSnapSurface.name = isVertical
+    ? "스냅 서피스 (하단)"
+    : "스냅 서피스 (좌측)";
   if (isVertical) {
     firstSnapSurface.rotation.x = -Math.PI / 2;
     firstSnapSurface.position.set(0, -length / 2 - 1.1, 0);
@@ -156,8 +158,13 @@ export function buildFlexibleJointGroup(
     const p1 = Math.cos(angle) * boltCircleRadius;
     const p2 = Math.sin(angle) * boltCircleRadius;
     const bolt = new THREE.Mesh(
-      new THREE.CylinderGeometry(boltHoleRadius - 0.5, boltHoleRadius - 0.5, flangeThickness + 8, 16),
-      boltMat
+      new THREE.CylinderGeometry(
+        boltHoleRadius - 0.5,
+        boltHoleRadius - 0.5,
+        flangeThickness + 8,
+        16,
+      ),
+      boltMat,
     );
     bolt.name = `볼트 (${i + 1})`;
     if (isVertical) {
@@ -184,14 +191,16 @@ export function buildFlexibleJointGroup(
 
   const secondSnapSurface = new THREE.Mesh(
     new THREE.CircleGeometry(flangeOuterRadius - 5, 32),
-    snapMat
+    snapMat,
   );
-  secondSnapSurface.name = isVertical ? "스냅 서피스 (상단)" : "스냅 서피스 (우측)";
+  secondSnapSurface.name = isVertical
+    ? "스냅 서피스 (상단)"
+    : "스냅 서피스 (우측)";
   if (isVertical) {
     secondSnapSurface.rotation.x = Math.PI / 2;
     secondSnapSurface.position.set(0, length / 2 + 1.1, 0);
   } else {
-    secondSnapSurface.rotation.y = Math.PI / 2;
+    secondSnapSurface.rotation.y = -Math.PI / 2;
     secondSnapSurface.position.set(length / 2 + 1.1, 0, 0);
   }
   jointGroup.add(secondSnapSurface);
@@ -201,8 +210,13 @@ export function buildFlexibleJointGroup(
     const p1 = Math.cos(angle) * boltCircleRadius;
     const p2 = Math.sin(angle) * boltCircleRadius;
     const bolt = new THREE.Mesh(
-      new THREE.CylinderGeometry(boltHoleRadius - 0.5, boltHoleRadius - 0.5, flangeThickness + 8, 16),
-      boltMat
+      new THREE.CylinderGeometry(
+        boltHoleRadius - 0.5,
+        boltHoleRadius - 0.5,
+        flangeThickness + 8,
+        16,
+      ),
+      boltMat,
     );
     bolt.name = `볼트 (${i + 1 + boltCount})`;
     if (isVertical) {
@@ -251,20 +265,27 @@ export function buildFlexibleJointGroup(
   braidMesh.name = "외부 그물망";
   jointGroup.add(braidMesh);
 
-  ([-bellowsLength / 2 - 5, bellowsLength / 2 + 5] as number[]).forEach((pos, idx) => {
-    const collar = new THREE.Mesh(
-      new THREE.CylinderGeometry(pipeRadius + 2, bellowsRadius + 2, 12, 32),
-      rubberCollarMat
-    );
-    collar.name = `실링 칼라 (${idx + 1})`;
-    if (isVertical) {
-      collar.position.set(0, pos, 0);
-    } else {
-      collar.rotation.z = Math.PI / 2;
-      collar.position.set(pos, 0, 0);
-    }
-    jointGroup.add(collar);
-  });
+  ([-bellowsLength / 2 - 5, bellowsLength / 2 + 5] as number[]).forEach(
+    (pos, idx) => {
+      const collar = new THREE.Mesh(
+        new THREE.CylinderGeometry(pipeRadius + 2, bellowsRadius + 2, 12, 32),
+        rubberCollarMat,
+      );
+      collar.name = `실링 칼라 (${idx + 1})`;
+      if (isVertical) {
+        collar.position.set(0, pos, 0);
+      } else {
+        collar.rotation.z = Math.PI / 2;
+        collar.position.set(pos, 0, 0);
+      }
+      jointGroup.add(collar);
+    },
+  );
+
+  // 💡 바운딩 박스를 계산하여 최하단이 정확히 바닥(Y=0)에 오도록 자동 정렬
+  jointGroup.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(jointGroup);
+  jointGroup.position.y -= box.min.y;
 
   return jointGroup;
 }
@@ -281,8 +302,12 @@ export default function FlexibleJointViewer({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
     const container = containerRef.current;
+    if (!container) return;
+
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0b0f19);
@@ -291,9 +316,8 @@ export default function FlexibleJointViewer({
       45,
       container.clientWidth / container.clientHeight,
       0.1,
-      2000
+      2000,
     );
-    camera.position.set(600, 360, 600);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -302,20 +326,37 @@ export default function FlexibleJointViewer({
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.target.set(0, 0, 0);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.75));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(300, 500, 300);
     scene.add(dirLight);
 
+    // 그리드를 바닥 레벨(Y=0)에 배치
     const gridHelper = new THREE.GridHelper(800, 30, 0x38bdf8, 0x1e293b);
-    gridHelper.position.y = -90;
+    gridHelper.position.y = 0;
     scene.add(gridHelper);
 
-    // 💡 부모로부터 받아서 전달된 spec 데이터를 직접 사용하여 3D 생성
+    // 3D 모델 생성 및 씬에 추가
     const jointGroup = buildFlexibleJointGroup(spec, orientation);
     scene.add(jointGroup);
+
+    // 💡 1. 모델의 실제 바운딩 박스와 중심점 계산 후 동적 센터링 적용
+    const box = new THREE.Box3().setFromObject(jointGroup);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+
+    // 💡 2. 카메라 타겟을 모델 중앙으로 설정
+    controls.target.copy(center);
+
+    // 💡 3. 카메라 위치를 중앙 기준 상대 좌표로 배치 (일관된 앵글 유지)
+    camera.position.set(
+      center.x + 400,
+      center.y + 170,
+      center.z + 400
+    );
+    camera.lookAt(center);
+    controls.update();
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -357,7 +398,24 @@ export default function FlexibleJointViewer({
       renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
       cancelAnimationFrame(animationFrameId);
       controls.dispose();
+
+      scene.traverse((object: THREE.Object3D) => {
+        if (object instanceof THREE.Mesh) {
+          if (object.geometry) {
+            object.geometry.dispose();
+          }
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach((mat: any) => mat.dispose());
+            } else {
+              object.material.dispose();
+            }
+          }
+        }
+      });
+
       renderer.dispose();
+
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
